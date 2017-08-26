@@ -1,4 +1,4 @@
-module Data.Auth.Hash
+module Data.Auth.Util.Hash
     ( Hash
     , hash
     ) where

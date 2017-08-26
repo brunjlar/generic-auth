@@ -15,8 +15,10 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.Auth
-                     , Data.Auth.Hash
+  exposed-modules:     Data.Auth.Core.Auth
+                     , Data.Auth.Core.Authenticatable
+                     , Data.Auth.Core.Role
+                     , Data.Auth.Util.Hash
   build-depends:       base >= 4.7 && < 5
                      , binary
                      , bytestring
@@ -24,8 +26,14 @@ library
                      , memory
   default-language:    Haskell2010
   ghc-options:         -Wall
-  default-extensions:  DeriveGeneric
+  default-extensions:  DataKinds
+                     , DeriveGeneric
+                     , FlexibleContexts
+                     , FlexibleInstances
+                     , GADTs
                      , ScopedTypeVariables
+                     , StandaloneDeriving
+                     , TypeFamilies
 
 source-repository head
   type:     git
