@@ -15,9 +15,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Data.Auth.Core.Auth
+  exposed-modules:     Data.Auth.Core
+                     , Data.Auth.Core.Auth
                      , Data.Auth.Core.Authenticatable
                      , Data.Auth.Core.Role
+                     , Data.Auth.Examples.Tree
                      , Data.Auth.Util.Hash
   build-depends:       base >= 4.7 && < 5
                      , binary

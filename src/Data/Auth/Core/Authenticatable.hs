@@ -10,9 +10,13 @@ class Binary (Shallow a) => Authenticatable a where
 
     shallowCopy :: a -> Shallow a
 
+type instance Shallow Char = Char
+
 instance Authenticatable Char where
 
     shallowCopy = id
+
+type instance Shallow Hash = Hash
 
 instance Authenticatable Hash where
 
