@@ -3,9 +3,9 @@ module Data.Auth.Examples.Tree
     , lookupTree
     , buildTree
     , exampleTree
+    , exampleProg
     , test
-    , testP
-    , testV
+    , test'
     ) where
 
 import Control.Monad.State
@@ -47,22 +47,20 @@ lookupTree at xs = do
         (Node _ r, R : ys) -> lookupTree r ys
 
 exampleTree :: AuthM (Auth (Tree String))
-exampleTree = buildTree 2 ["Alice", "Bob", "Charlie", "Doris"]
+exampleTree = buildTree 3 ["Alice", "Bob", "Charlie", "Doris", "Eric", "Fred", "Gina", "Heather"]
 
-test :: Show a => PureProver a -> PureVerifier a -> IO ()
+exampleProg :: [Direction] -> AuthM (Maybe String)
+exampleProg xs = do
+    t <- exampleTree
+    lookupTree t xs
+
+test :: Show a => AuthM a -> AuthM a -> IO ()
 test p v = do
-    let (a, bs) = runPureProver p
+    let (a, bs) = runProver p
     print a
     print bs
-    let ma' = runPureVerifier v bs
-    print ma'
+    let ea = runVerifier v bs
+    print ea
 
-testP :: PureProver (Maybe String)
-testP = prover $ do
-    t <- exampleTree
-    lookupTree t [R, L]
-
-testV :: PureVerifier (Maybe String)
-testV = verifier $ do
-    t <- exampleTree
-    lookupTree t [R, L]
+test' :: [Direction] -> [Direction] -> IO ()
+test' xs ys = test (exampleProg xs) (exampleProg ys)

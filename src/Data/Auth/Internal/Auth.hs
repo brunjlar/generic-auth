@@ -3,10 +3,12 @@ module Data.Auth.Internal.Auth
     , authP
     , authV
     , unauthP
+    , AuthError (..)
     , unauthV
     ) where
 
-import Control.Monad                  (guard, MonadPlus (..))
+import Control.Exception              (Exception)
+import Control.Monad.Except           (MonadError (..))
 import Data.Auth.Internal.Authenticatable
 import Data.Auth.Util.Hash
 import Data.Binary                    (Binary (..), encode, decodeOrFail)
@@ -33,10 +35,15 @@ unauthP :: Authenticatable a => Auth a -> (a, ByteString)
 unauthP (P _ a) = (a, encode $ shallowCopy a)
 unauthP (V _)   = error "illegal Auth for prover"
 
-unauthV :: Authenticatable a => Auth a -> ByteString -> Maybe (a, ByteString)
+data AuthError = DeserializationError String | AuthenticationError
+    deriving Show
+
+instance Exception AuthError
+
+unauthV :: Authenticatable a => Auth a -> ByteString -> Either AuthError (a, ByteString)
 unauthV (V h)   bs = case decodeOrFail bs of
-    Left _            -> mzero
-    Right (bs', _, a) -> do
-        guard $ hash a == h
-        return (a, bs')
+    Left (_, _, e)    -> throwError $ DeserializationError e
+    Right (bs', _, a)
+        | hash a == h -> return (a, bs')
+        | otherwise   -> throwError AuthenticationError
 unauthV (P _ _) _  = error "illegal Auth for verifier"

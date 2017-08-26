@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DefaultSignatures #-}
 
 module Data.Auth.Internal.Authenticatable
     ( Authenticatable (..)
