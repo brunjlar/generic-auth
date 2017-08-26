@@ -13,8 +13,8 @@ data Tree a =
     | Node (Auth (Tree a)) (Auth (Tree a))
     deriving (Show, Generic)
 
-instance Binary a => Binary (Tree a) where
-instance Authenticatable a => Authenticatable (Tree a) where
+instance Binary a => Binary (Tree a)
+instance Authenticatable a => Authenticatable (Tree a)
 
 example :: Tree String
 example = Node
