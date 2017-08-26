@@ -2,21 +2,16 @@ module Data.Auth.Core.Authenticatable
     ( Authenticatable (..)
     ) where
 
-import Data.Auth.Core.Role
 import Data.Auth.Util.Hash
 import Data.Binary         (Binary)
 
-class Binary (Shallow a) => Authenticatable a where
+class Binary a => Authenticatable a where
 
-    shallowCopy :: a -> Shallow a
-
-type instance Shallow Char = Char
+    shallowCopy :: a -> a
 
 instance Authenticatable Char where
 
     shallowCopy = id
-
-type instance Shallow Hash = Hash
 
 instance Authenticatable Hash where
 

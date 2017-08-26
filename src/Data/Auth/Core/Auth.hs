@@ -6,37 +6,37 @@ module Data.Auth.Core.Auth
     , unauthV
     ) where
 
+import Control.Monad                  (guard, MonadPlus (..))
 import Data.Auth.Core.Authenticatable
-import Data.Auth.Core.Role
 import Data.Auth.Util.Hash
-import Data.Binary                    (Binary (..))
+import Data.Binary                    (Binary (..), encode, decodeOrFail)
+import Data.ByteString.Lazy           (ByteString)
+import GHC.Generics                   (Generic)
 
-data Auth :: Role -> * -> * where
-    P :: Hash -> a -> Auth 'Prover a
-    V :: Hash -> Auth 'Verifier a
+data Auth a = P Hash a | V Hash
+    deriving (Show, Generic)
 
-deriving instance Show a => Show (Auth r a)
+instance Binary a => Binary (Auth a) where
 
-instance Binary (Auth 'Verifier a) where
-
-    get = V <$> get
-
-    put (V h) = put h
-
-instance Authenticatable (Auth r a) where
+instance Binary a => Authenticatable (Auth a) where
 
     shallowCopy (P h _) = V h
     shallowCopy (V h)   = V h
 
-authP :: Authenticatable a => a -> Auth 'Prover a
+authP :: Authenticatable a => a -> Auth a
 authP a = P (hash $ shallowCopy a) a
 
-authV :: Authenticatable a => Shallow a -> Auth 'Verifier a
+authV :: Authenticatable a => a -> Auth a
 authV = V . hash
 
-unauthP :: Authenticatable a => Auth 'Prover a -> (a, Shallow a)
-unauthP (P _ a) = (a, shallowCopy a)
+unauthP :: Authenticatable a => Auth a -> (a, ByteString)
+unauthP (P _ a) = (a, encode $ shallowCopy a)
+unauthP (V _)   = error "illegal Auth for prover"
 
-unauthV :: Authenticatable a => Auth 'Verifier a -> Shallow a -> Maybe (Shallow a)
-unauthV (V h) a = if h == hash a then Just a
-                                 else Nothing
+unauthV :: Authenticatable a => Auth a -> ByteString -> Maybe (a, ByteString)
+unauthV (V h)   bs = case decodeOrFail bs of
+    Left _            -> mzero
+    Right (bs', _, a) -> do
+        guard $ hash a == h
+        return (a, bs')
+unauthV (P _ _) _  = error "illegal Auth for verifier"
