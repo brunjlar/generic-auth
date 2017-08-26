@@ -1,11 +1,16 @@
 module Data.Auth.Examples.Tree
     ( Tree (..)
-    , example
     , lookupTree
+    , buildTree
+    , exampleTree
+    , test
+    , testP
+    , testV
     ) where
 
+import Control.Monad.State
 import Data.Auth.Core
-import Data.Binary    (Binary)
+import Data.Binary         (Binary)
 import GHC.Generics
 
 data Tree a =
@@ -16,18 +21,20 @@ data Tree a =
 instance Binary a => Binary (Tree a)
 instance Authenticatable a => Authenticatable (Tree a)
 
-example :: Tree String
-example = Node
-    (authP $ Node (authP $ Tip "Alice") (authP $ Tip "Bob"))
-    (authP $ Node (authP $ Tip "Charlie") (authP $ Tip "Doris"))
-
-exampleP :: Auth (Tree String)
-exampleP = authP example
-
-exampleV :: Auth (Tree String)
-exampleV = authV $ shallowCopy example
-
 data Direction = L | R deriving (Show, Eq)
+
+buildTree :: forall a. Authenticatable a => Int -> [a] -> AuthM (Auth (Tree a))
+buildTree = evalStateT . go
+  where
+    go :: Int -> StateT [a] AuthM (Auth (Tree a))
+    go 0 = do
+        (y : ys) <- get
+        put ys
+        lift $ auth $ Tip y
+    go d = do
+        let d' = d - 1
+        node <- Node <$> go d' <*> go d'
+        lift $ auth node
 
 lookupTree :: Authenticatable a => Auth (Tree a) -> [Direction] -> AuthM (Maybe a)
 lookupTree at xs = do
@@ -39,6 +46,9 @@ lookupTree at xs = do
         (Node l _, L : ys) -> lookupTree l ys
         (Node _ r, R : ys) -> lookupTree r ys
 
+exampleTree :: AuthM (Auth (Tree String))
+exampleTree = buildTree 2 ["Alice", "Bob", "Charlie", "Doris"]
+
 test :: Show a => PureProver a -> PureVerifier a -> IO ()
 test p v = do
     let (a, bs) = runPureProver p
@@ -48,7 +58,11 @@ test p v = do
     print ma'
 
 testP :: PureProver (Maybe String)
-testP = prover $ lookupTree exampleP [R, L]
+testP = prover $ do
+    t <- exampleTree
+    lookupTree t [R, L]
 
 testV :: PureVerifier (Maybe String)
-testV = verifier $ lookupTree exampleV [R, L]
+testV = verifier $ do
+    t <- exampleTree
+    lookupTree t [R, L]

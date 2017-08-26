@@ -1,4 +1,4 @@
-module Data.Auth.Core.Auth
+module Data.Auth.Internal.Auth
     ( Auth
     , authP
     , authV
@@ -7,7 +7,7 @@ module Data.Auth.Core.Auth
     ) where
 
 import Control.Monad                  (guard, MonadPlus (..))
-import Data.Auth.Core.Authenticatable
+import Data.Auth.Internal.Authenticatable
 import Data.Auth.Util.Hash
 import Data.Binary                    (Binary (..), encode, decodeOrFail)
 import Data.ByteString.Lazy           (ByteString)

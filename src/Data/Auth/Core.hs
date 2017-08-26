@@ -1,9 +1,9 @@
 module Data.Auth.Core
-    ( module Data.Auth.Core.Auth
-    , module Data.Auth.Core.Authenticatable
-    , module Data.Auth.Core.Monad
+    ( module Data.Auth.Internal.Auth
+    , module Data.Auth.Internal.Authenticatable
+    , module Data.Auth.Internal.Monad
     ) where
 
-import Data.Auth.Core.Auth
-import Data.Auth.Core.Authenticatable
-import Data.Auth.Core.Monad
+import Data.Auth.Internal.Auth hiding (authP, authV, unauthP, unauthV)
+import Data.Auth.Internal.Authenticatable
+import Data.Auth.Internal.Monad

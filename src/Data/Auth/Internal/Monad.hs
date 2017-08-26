@@ -1,4 +1,4 @@
-module Data.Auth.Core.Monad
+module Data.Auth.Internal.Monad
     ( AuthM
     , auth
     , unauth
@@ -15,11 +15,11 @@ import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Auth.Core.Auth
-import Data.Auth.Core.Authenticatable
-import Data.ByteString.Builder        (Builder, lazyByteString, toLazyByteString)
-import Data.ByteString.Lazy           (ByteString)
-import Data.Monoid                    (mempty, (<>))
+import Data.Auth.Internal.Auth
+import Data.Auth.Internal.Authenticatable
+import Data.ByteString.Builder            (Builder, lazyByteString, toLazyByteString)
+import Data.ByteString.Lazy               (ByteString)
+import Data.Monoid                        (mempty, (<>))
 
 data AuthF :: * -> * where
     Auth   :: Authenticatable a => a -> (Auth a -> b) -> AuthF b

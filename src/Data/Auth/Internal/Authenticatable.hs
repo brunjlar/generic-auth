@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module Data.Auth.Core.Authenticatable
+module Data.Auth.Internal.Authenticatable
     ( Authenticatable (..)
     ) where
 
