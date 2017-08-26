@@ -1,0 +1,3 @@
+module Data.Auth
+    (
+    ) where
