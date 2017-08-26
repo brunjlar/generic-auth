@@ -14,11 +14,7 @@ data Tree a =
     deriving (Show, Generic)
 
 instance Binary a => Binary (Tree a) where
-
 instance Authenticatable a => Authenticatable (Tree a) where
-
-    shallowCopy (Tip a)    = Tip $ shallowCopy a
-    shallowCopy (Node l r) = Node (shallowCopy l) (shallowCopy r)
 
 example :: Tree String
 example = Node
