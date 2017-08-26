@@ -5,14 +5,21 @@ module Data.Auth.Core.Monad
     , MonadProver (..)
     , prover
     , verifier
+    , PureProver
+    , runPureProver
+    , PureVerifier
+    , runPureVerifier
     ) where
 
 import Control.Monad.Except
 import Control.Monad.Free
+import Control.Monad.Reader
 import Control.Monad.State
 import Data.Auth.Core.Auth
 import Data.Auth.Core.Authenticatable
+import Data.ByteString.Builder        (Builder, lazyByteString, toLazyByteString)
 import Data.ByteString.Lazy           (ByteString)
+import Data.Monoid                    (mempty, (<>))
 
 data AuthF :: * -> * where
     Auth   :: Authenticatable a => a -> (Auth a -> b) -> AuthF b
@@ -33,6 +40,8 @@ class Monad m => MonadProver m where
 
     writeProofStream :: ByteString -> m ()
 
+class (MonadError () m, MonadReader ByteString m) => MonadVerifier m where
+
 proverF :: MonadProver m => AuthF (m b) -> m b
 proverF (Auth a cont)   = cont (authP a)
 proverF (Unauth x cont) = do
@@ -43,15 +52,35 @@ proverF (Unauth x cont) = do
 prover :: MonadProver m => AuthM a -> m a
 prover (AuthM m) = iterM proverF m
 
-verifierF :: (MonadError () m, MonadState ByteString m) => AuthF (m b) -> m b
+verifierF :: MonadVerifier m => AuthF (m b) -> m b
 verifierF (Auth a cont)   = cont (authV a)
 verifierF (Unauth x cont) = do
-    bs <- get
+    bs <- ask
     case unauthV x bs of
         Nothing       -> throwError ()
-        Just (a, bs') -> do
-            put bs'
-            cont a
+        Just (a, bs') -> local (const bs') $ cont a
 
-verifier :: (MonadError () m, MonadState ByteString m) => AuthM b -> m b
+verifier :: MonadVerifier m => AuthM b -> m b
 verifier (AuthM m) = iterM verifierF m
+
+newtype PureProver a = PureProver (State Builder a)
+    deriving (Functor, Applicative, Monad)
+
+instance MonadProver PureProver where
+
+    writeProofStream bs = PureProver $ modify (<> lazyByteString bs)
+
+runPureProver :: PureProver a -> (a, ByteString)
+runPureProver (PureProver m) =
+    let (a, b) = runState m mempty
+    in  (a, toLazyByteString b)
+
+newtype PureVerifier a = PureVerifier (ReaderT ByteString (Either ()) a)
+    deriving (Functor, Applicative, Monad, MonadReader ByteString, MonadError ())
+
+instance MonadVerifier PureVerifier where
+
+runPureVerifier :: PureVerifier a -> ByteString -> Maybe a
+runPureVerifier (PureVerifier m) bs = case runReaderT m bs of
+    Left () -> Nothing
+    Right a -> Just a
