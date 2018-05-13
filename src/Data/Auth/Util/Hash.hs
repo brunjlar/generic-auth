@@ -1,3 +1,17 @@
+{-# OPTIONS_HADDOCK show-extensions #-}
+
+{-|
+Module      : Data.Auth.Utils.Hash
+Description : hashing
+Copyright   : (c) Lars Brünjes, 2018
+License     : MIT
+Maintainer  : brunjlar@gmail.com
+Stability   : experimental
+Portability : portable
+
+This module provides an implementation of cryptographic hashing.
+-}
+
 module Data.Auth.Util.Hash
     ( Hash
     , hash
@@ -6,9 +20,10 @@ module Data.Auth.Util.Hash
 import qualified Crypto.Hash          as C
 import           Data.Binary          (Binary (..), encode)
 import qualified Data.ByteArray       as A
-import           Data.ByteString.Lazy (toStrict)
 import qualified Data.ByteString      as B
+import           Data.ByteString.Lazy (toStrict)
 
+-- | A /hash/, implemented as a SHA256 digest.
 newtype Hash = Hash {getHash :: C.Digest C.SHA256}
     deriving Eq
 
@@ -26,6 +41,7 @@ instance Binary Hash where
 
     put = put . A.unpack . getHash
 
-
+-- | Hashes a serializable value using the SHA256 cryptographic hashing
+-- algorithm.
 hash :: Binary a => a -> Hash
 hash = Hash . C.hash . toStrict . encode

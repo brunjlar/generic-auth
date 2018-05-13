@@ -1,4 +1,20 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE TypeOperators     #-}
+
+{-# OPTIONS_HADDOCK show-extensions #-}
+
+{-|
+Module      : Data.Auth.Internal.Authenticatable
+Description : class Authenticatable and instances
+Copyright   : (c) Lars Brünjes, 2018
+License     : MIT
+Maintainer  : brunjlar@gmail.com
+Stability   : experimental
+Portability : portable
+
+This module defines class Authenticatable and its instances.
+-}
 
 module Data.Auth.Internal.Authenticatable
     ( Authenticatable (..)
@@ -8,6 +24,11 @@ import Data.Auth.Util.Hash
 import Data.Binary         (Binary)
 import GHC.Generics
 
+-- | A type is @`Authenticatable`@ if it admits making a /shallow copy/.
+-- For primitive types, @`shallowCopy`@ is simply the identity.
+-- For compound types, @`shallowCopy`@ is invoked recursively on all
+-- constituents.
+-- Instances can be derived generically.
 class Binary a => Authenticatable a where
     shallowCopy :: a -> a
     default shallowCopy :: (Generic a, Authenticatable' (Rep a)) => a -> a

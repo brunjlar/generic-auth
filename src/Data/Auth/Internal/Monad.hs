@@ -1,3 +1,27 @@
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE KindSignatures             #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+
+{-# OPTIONS_HADDOCK show-extensions #-}
+
+{-|
+Module      : Data.Auth.Internal.Monad
+Description : AuthT monad transformer
+Copyright   : (c) Lars Brünjes, 2018
+License     : MIT
+Maintainer  : brunjlar@gmail.com
+Stability   : experimental
+Portability : portable
+
+This module defines the AuthT monad transformer.
+-}
+
 module Data.Auth.Internal.Monad
     ( AuthT
     , AuthM
@@ -15,20 +39,26 @@ module Data.Auth.Internal.Monad
 import           Control.Applicative
 import           Control.Comonad.Trans.Identity     (IdentityT)
 import           Control.Monad.Catch                (MonadCatch, MonadThrow)
-import           Control.Monad.Cont                 (MonadCont, ContT)
-import           Control.Monad.Except               (MonadError (..), ExceptT, runExceptT)
+import           Control.Monad.Cont                 (ContT, MonadCont)
+import           Control.Monad.Except               (ExceptT, MonadError (..),
+                                                     runExceptT)
 import           Control.Monad.Identity             (Identity (..))
+import           Control.Monad.Reader               (MonadIO, MonadPlus,
+                                                     MonadReader (..),
+                                                     MonadTrans (..),
+                                                     ReaderT (..))
+import           Control.Monad.State                (MonadState, StateT, modify,
+                                                     runStateT)
+import qualified Control.Monad.State.Strict         as SS
 import           Control.Monad.Trans.Free
 import           Control.Monad.Trans.Iter           (IterT)
 import           Control.Monad.Trans.Maybe          (MaybeT)
-import           Control.Monad.Reader               (MonadReader (..), ReaderT (..), MonadTrans (..), MonadIO, MonadPlus)
-import           Control.Monad.State                (MonadState, StateT, modify, runStateT)
-import qualified Control.Monad.State.Strict         as SS
 import           Control.Monad.Writer               (MonadWriter (..), WriterT)
 import qualified Control.Monad.Writer.Strict        as WS
 import           Data.Auth.Internal.Auth
 import           Data.Auth.Internal.Authenticatable
-import           Data.ByteString.Builder            (Builder, lazyByteString, toLazyByteString)
+import           Data.ByteString.Builder            (Builder, lazyByteString,
+                                                     toLazyByteString)
 import           Data.ByteString.Lazy               (ByteString)
 import           Data.Monoid                        (mempty, (<>))
 import           Pipes                              (ListT)
