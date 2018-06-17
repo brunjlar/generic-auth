@@ -1,9 +1,10 @@
-resolver: lts-11.9
+resolver: nightly-2018-06-17
 packages:
 - .
 extra-deps: []
 flags: {}
 extra-package-dbs: []
+allow-newer: true
 nix:
     enable: true
     shell-file: shell.nix
