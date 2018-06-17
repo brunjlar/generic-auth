@@ -24,6 +24,7 @@ import qualified Data.ByteString        as B
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8  as B8
 import           Data.ByteString.Lazy   (toStrict)
+import           Test.QuickCheck
 
 -- | A /hash/, implemented as a SHA256 digest.
 newtype Hash = Hash {getHash :: C.Digest C.SHA256}
@@ -56,8 +57,17 @@ instance Binary Hash where
 
     put = put . A.unpack . getHash
 
+instance Arbitrary Hash where
+
+    arbitrary = do
+        n <- arbitrary :: Gen Int
+        return $ hash n
+
+    shrink = const [] -- Shrinking a hash makes no sense.
+
 -- | Hashes a serializable value using the SHA256 cryptographic hashing
--- algorithm.
+-- algorithm. This is the only way to generate a value of type @'Hash'@,
+-- because the constructor of @'Hash'@ is not exported.
 --
 -- >>> hash "xyz"
 -- da5e5e70038e631c22d902e912e605cff9dd71a0180bd4c2681447e6bd7fca7c
