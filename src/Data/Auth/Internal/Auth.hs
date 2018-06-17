@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric  #-}
 
 {-# OPTIONS_HADDOCK show-extensions #-}
 
@@ -35,9 +36,7 @@ import GHC.Generics                       (Generic)
 data Auth a =
       P Hash a -- ^ used by the /prover/
     | V Hash   -- ^ used by the /verifier/
-    deriving (Show, Generic)
-
-instance Binary a => Binary (Auth a) where
+    deriving (Show, Generic, Binary)
 
 instance Binary a => Authenticatable (Auth a) where
 

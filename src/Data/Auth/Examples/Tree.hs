@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -33,10 +34,7 @@ import GHC.Generics
 data Tree a =
       Tip a
     | Node (Auth (Tree a)) (Auth (Tree a))
-    deriving (Show, Generic)
-
-instance Binary a => Binary (Tree a)
-instance Authenticatable a => Authenticatable (Tree a)
+    deriving (Show, Generic, Binary, Authenticatable)
 
 data Direction = L | R deriving (Show, Eq)
 
