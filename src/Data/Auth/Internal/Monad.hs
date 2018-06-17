@@ -19,7 +19,8 @@ Maintainer  : brunjlar@gmail.com
 Stability   : experimental
 Portability : portable
 
-This module defines the AuthT monad transformer.
+This module defines the @'AuthT'@ monad transformer and functions to
+run an @'AuthT'@-computation as /prover/ or /verifier/.
 -}
 
 module Data.Auth.Internal.Monad
@@ -69,14 +70,21 @@ data AuthF :: * -> * where
 
 deriving instance Functor AuthF
 
+-- | A monad transformer adding the ability to run computations
+-- over authenticated data structures,
+-- which can then be interpreted on prover- and on verifier side.
 newtype AuthT m a = AuthT (FreeT AuthF m a)
     deriving (Functor, Applicative, Monad, MonadTrans,
               MonadReader r, MonadError e, MonadState s, MonadWriter w,
               MonadIO, MonadCont, MonadThrow, MonadCatch,
               Alternative, MonadPlus, MonadFree AuthF)
 
+-- | A monad for computations over authenticated data structures
+-- that can be interpreted on prover- and on verifier side.
 type AuthM = AuthT Identity
 
+-- | Type class for monads allowing computations involving
+-- authenticated data structures.
 class Monad m => MonadAuth m where
     auth :: Authenticatable a => a -> m (Auth a)
     default auth :: (MonadTrans t, MonadAuth n, t n ~ m, Authenticatable a) => a -> m (Auth a)
@@ -102,6 +110,8 @@ instance MonadAuth m => MonadAuth (IterT m)
 instance (Monoid w, MonadAuth m) => MonadAuth (WriterT w m)
 instance (Monoid w, MonadAuth m) => MonadAuth (WS.WriterT w m)
 
+-- | Type class for monads suitable for the interpretation of
+-- @'AuthT'@-computations on /prover/ side.
 class Monad m => MonadProver m where
     writeProof :: ByteString -> m ()
     default writeProof :: (MonadTrans t, MonadProver n, t n ~ m) => ByteString -> m ()
@@ -119,6 +129,8 @@ instance MonadProver m => MonadProver (IterT m)
 instance (Monoid w, MonadProver m) => MonadProver (WriterT w m)
 instance (Monoid w, MonadProver m) => MonadProver (WS.WriterT w m)
 
+-- | Interprets an @'AuthT'@-computation in a suitable monad
+-- implementing @'MonadProver'@.
 prover :: forall m t b. (Monad m, MonadTrans t, MonadProver (t m)) => AuthT m b -> t m b
 prover (AuthT m) = iterTM proverF m
   where
@@ -135,17 +147,29 @@ newtype ProverT m a = ProverT (StateT Builder m a)
 instance Monad m => MonadProver (ProverT m) where
     writeProof bs = ProverT $ modify (<> lazyByteString bs)
 
+-- | Interprets an @'AuthT'@-computation over an arbitrary monad
+-- in prover-mode
+-- by simply returning the proof-string together with the result.
 runProverT :: Monad m => AuthT m a -> m (a, ByteString)
 runProverT m = do
     let ProverT n = prover m
     (a, builder) <- runStateT n mempty
     return (a, toLazyByteString builder)
 
+-- | Interprets an @'AuthM'@-computation in prover-mode
+-- by simply returning the proof-string together with the result.
+--
+-- >>> runProver $ auth True >>= unauth
+-- (True,"\SOH")
 runProver :: AuthM a -> (a, ByteString)
 runProver = runIdentity . runProverT
 
+-- | Type class for monads suitable for the interpretation of
+-- @'AuthT'@-computations on /verifier/ side.
 type MonadVerifier m = (MonadReader ByteString m, MonadError AuthError m)
 
+-- | Interprets an @'AuthT'@-computation in a suitable monad
+-- implementing @'MonadVerifier'@.
 verifier :: forall m t b. (Monad m, MonadTrans t, MonadVerifier (t m)) => AuthT m b -> t m b
 verifier (AuthT m) = iterTM verifierF m
   where
@@ -163,10 +187,21 @@ newtype VerifierT m a = VerifierT (ReaderT ByteString (ExceptT AuthError m) a)
 instance MonadTrans VerifierT where
     lift = VerifierT . lift . lift
 
+-- | Interprets an @'AuthT'@-computation over an arbitrary monad
+-- in verifier-mode
+-- by simply taking the proof-string as an additional argument.
 runVerifierT :: Monad m => AuthT m a -> ByteString -> m (Either AuthError a)
 runVerifierT m bs =
     let (VerifierT n) = verifier m
     in  runExceptT $ runReaderT n bs
 
+-- | Interprets an @'AuthM'@-computation in verifier-mode
+-- by simply taking the proof-string as an additional argument.
+--
+-- >>> let prog = (auth 'x' >>= unauth) in let (_, bs) = runProver prog in runVerifier prog bs
+-- Right 'x'
+--
+-- >>> let (_, bs) = runProver (auth 'x' >>= unauth) in runVerifier (auth 'y' >>= unauth) bs
+-- Left AuthenticationError
 runVerifier :: AuthM a -> ByteString -> Either AuthError a
 runVerifier m = runIdentity . runVerifierT m

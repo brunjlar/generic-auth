@@ -46,7 +46,8 @@ test-suite test
                      , hspec
                      , generic-auth
                      , QuickCheck
-  other-modules:       Data.Auth.Util.HashSpec
+  other-modules:       Data.Auth.Examples.TreeSpec
+                     , Data.Auth.Util.HashSpec
   ghc-options:         -Wall
   default-language:    Haskell2010
 
