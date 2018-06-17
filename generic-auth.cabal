@@ -22,6 +22,7 @@ library
                      , Data.Auth.Examples.Tree
                      , Data.Auth.Util.Hash
   build-depends:       base >= 4.7 && < 5
+                     , base16-bytestring
                      , binary
                      , bytestring
                      , comonad

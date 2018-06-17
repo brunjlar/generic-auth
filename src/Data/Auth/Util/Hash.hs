@@ -17,19 +17,34 @@ module Data.Auth.Util.Hash
     , hash
     ) where
 
-import qualified Crypto.Hash          as C
-import           Data.Binary          (Binary (..), encode)
-import qualified Data.ByteArray       as A
-import qualified Data.ByteString      as B
-import           Data.ByteString.Lazy (toStrict)
+import qualified Crypto.Hash            as C
+import           Data.Binary            (Binary (..), encode)
+import qualified Data.ByteArray         as A
+import qualified Data.ByteString        as B
+import qualified Data.ByteString.Base16 as B16
+import qualified Data.ByteString.Char8  as B8
+import           Data.ByteString.Lazy   (toStrict)
 
 -- | A /hash/, implemented as a SHA256 digest.
 newtype Hash = Hash {getHash :: C.Digest C.SHA256}
-    deriving Eq
+    deriving (Eq, Ord)
 
 instance Show Hash where
 
     show = show . getHash
+
+instance Read Hash where
+
+    readsPrec _ s
+        | length s < 64 = []
+        | otherwise     =
+            let (s', s'') = splitAt 64 s
+            in  if all (`elem` "0123456789abcdef") s'
+                    then
+                        let (bs, _) = B16.decode $ B8.pack s'
+                            Just d  = C.digestFromByteString bs
+                        in  [(Hash d, s'')]
+                    else []
 
 instance Binary Hash where
 
