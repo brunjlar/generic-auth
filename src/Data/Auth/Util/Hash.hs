@@ -58,5 +58,9 @@ instance Binary Hash where
 
 -- | Hashes a serializable value using the SHA256 cryptographic hashing
 -- algorithm.
+--
+-- >>> hash "xyz"
+-- da5e5e70038e631c22d902e912e605cff9dd71a0180bd4c2681447e6bd7fca7c
+--
 hash :: Binary a => a -> Hash
 hash = Hash . C.hash . toStrict . encode
