@@ -2,17 +2,23 @@ module Data.Auth.Examples.TreeSpec
     ( spec
     ) where
 
+import Control.Monad           (forM_)
 import Data.Auth.Core
 import Data.Auth.Examples.Tree
 import Test.Hspec
-import Test.QuickCheck
 
 spec :: Spec
-spec = describe "Tree" $ return ()
+spec = describe "lookupTree" $ do
+    let (t, _) = runProver exampleTree
+        h      = toHash t
+    forM_ paths $ \p ->
+        it ("can be verified for path " ++ show p) $ do
+            let (x, bs) = runProver $ lookupTree p t
+            runVerifier' (lookupTree p) h bs `shouldBe` Right x
 
-authWorks :: Eq a => AuthM a -> Bool
-authWorks p =
-    let (a, bs) = runProver p
-    in  case runVerifier p bs of
-            Left _   -> False
-            Right a' -> a == a'
+paths :: [[Direction]]
+paths = do
+    x <- [L, R]
+    y <- [L, R]
+    z <- [L, R]
+    return [x, y, z]

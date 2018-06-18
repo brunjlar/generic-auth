@@ -22,7 +22,6 @@ module Data.Auth.Examples.Tree
     , lookupTree
     , buildTree
     , exampleTree
-    , exampleProg
     ) where
 
 import Control.Monad.State
@@ -61,37 +60,30 @@ buildTree = evalStateT . go
 -- | Looks up the tip of a tree to which the given path from the root leads.
 -- Returns @'Nothing'@ if the path does not lead to a tip.
 --
--- >>> fst $ runProver $ buildTree 1 ["Alice", "Bob"] >>= \t -> lookupTree t [L]
+-- >>> fst $ runProver $ buildTree 1 ["Alice", "Bob"] >>= lookupTree [L]
 -- Just "Alice"
-lookupTree :: Authenticatable a => Auth (Tree a) -> [Direction] -> AuthM (Maybe a)
-lookupTree at xs = do
+lookupTree :: Authenticatable a => [Direction] -> Auth (Tree a) -> AuthM (Maybe a)
+lookupTree xs at = do
     t <- unauth at
     case (t, xs) of
         (Tip a   , [])     -> return $ Just a
         (Tip _   , _)      -> return Nothing
         (Node _ _, [])     -> return Nothing
-        (Node l _, L : ys) -> lookupTree l ys
-        (Node _ r, R : ys) -> lookupTree r ys
+        (Node l _, L : ys) -> lookupTree ys l
+        (Node _ r, R : ys) -> lookupTree ys r
 
 -- | Computation to build a simple example @'Tree'@ of depth three with eight
 -- tips.
+--
+-- >>> let (t, _) = runProver exampleTree
+-- >>> let h = toHash t
+-- >>> h
+-- a651ca4e022aa8633799d1e717f00b4343ae08131dee9d3aae431f497c7bd7c2
+-- >>> let (x, bs) = runProver $ lookupTree [L, L, R] t
+-- >>> x
+-- Just "Bob"
+-- >>> runVerifier' (lookupTree [L, L, R]) h bs :: Either AuthError (Maybe String)
+-- Right (Just "Bob")
+--
 exampleTree :: AuthM (Auth (Tree String))
 exampleTree = buildTree 3 ["Alice", "Bob", "Charlie", "Doris", "Eric", "Fred", "Gina", "Heather"]
-
--- | An example computation that looks up the tip at the specified path in
--- @'exampleTree'@.
-exampleProg :: [Direction] -> AuthM (Maybe String)
-exampleProg xs = do
-    t <- exampleTree
-    lookupTree t xs
-
-test :: Show a => AuthM a -> AuthM a -> IO ()
-test p v = do
-    let (a, bs) = runProver p
-    print a
-    print bs
-    let ea = runVerifier v bs
-    print ea
-
-test' :: [Direction] -> [Direction] -> IO ()
-test' xs ys = test (exampleProg xs) (exampleProg ys)

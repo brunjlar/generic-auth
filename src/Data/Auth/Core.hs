@@ -20,7 +20,7 @@ module Data.Auth.Core
     , Binary
     ) where
 
-import Data.Auth.Internal.Auth            hiding (authP, authV, unauthP,
+import Data.Auth.Internal.Auth            hiding (P, V, authP, authV, unauthP,
                                            unauthV)
 import Data.Auth.Internal.Authenticatable hiding (shallowCopy)
 import Data.Auth.Internal.Monad

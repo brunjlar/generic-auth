@@ -33,8 +33,11 @@ module Data.Auth.Internal.Monad
     , runProver
     , MonadVerifier
     , verifier
+    , verifier'
     , runVerifierT
+    , runVerifierT'
     , runVerifier
+    , runVerifier'
     ) where
 
 import           Control.Applicative
@@ -58,6 +61,7 @@ import           Control.Monad.Writer               (MonadWriter (..), WriterT)
 import qualified Control.Monad.Writer.Strict        as WS
 import           Data.Auth.Internal.Auth
 import           Data.Auth.Internal.Authenticatable
+import           Data.Auth.Util.Hash
 import           Data.ByteString.Builder            (Builder, lazyByteString,
                                                      toLazyByteString)
 import           Data.ByteString.Lazy               (ByteString)
@@ -181,6 +185,14 @@ verifier (AuthT m) = iterTM verifierF m
             Left e         -> throwError e
             Right (a, bs') -> local (const bs') $ c a
 
+-- | Interprets a function @'Auth' a -> 'AuthT' m b@ in a suitable monad
+-- implementing @'MonadVerifier'@, given the hash corresponding to an @'Auth' a@ argument.
+verifier' :: (Monad m, MonadTrans t, MonadVerifier (t m), Authenticatable a)
+          => (Auth a -> AuthT m b)
+          -> Hash
+          -> t m b
+verifier' f h = verifier $ f $ V h
+
 newtype VerifierT m a = VerifierT (ReaderT ByteString (ExceptT AuthError m) a)
     deriving (Functor, Applicative, Monad, MonadReader ByteString, MonadError AuthError)
 
@@ -190,10 +202,20 @@ instance MonadTrans VerifierT where
 -- | Interprets an @'AuthT'@-computation over an arbitrary monad
 -- in verifier-mode
 -- by simply taking the proof-string as an additional argument.
-runVerifierT :: Monad m => AuthT m a -> ByteString -> m (Either AuthError a)
+runVerifierT :: Monad m => AuthT m b -> ByteString -> m (Either AuthError b)
 runVerifierT m bs =
     let (VerifierT n) = verifier m
     in  runExceptT $ runReaderT n bs
+
+-- | Interprets a function @'Auth' a -> 'AuthT' m b@ in verifier-mode
+-- by simply taking the proof-string as an additional argument,
+-- given the hash corresponding to an @'Auth' a@ argument.
+runVerifierT' :: (Authenticatable a, Monad m)
+              => (Auth a -> AuthT m b)
+              -> Hash
+              -> ByteString
+              -> m (Either AuthError b)
+runVerifierT' f h = runVerifierT (f $ V h)
 
 -- | Interprets an @'AuthM'@-computation in verifier-mode
 -- by simply taking the proof-string as an additional argument.
@@ -203,5 +225,15 @@ runVerifierT m bs =
 --
 -- >>> let (_, bs) = runProver (auth 'x' >>= unauth) in runVerifier (auth 'y' >>= unauth) bs
 -- Left AuthenticationError
-runVerifier :: AuthM a -> ByteString -> Either AuthError a
+runVerifier :: AuthM b -> ByteString -> Either AuthError b
 runVerifier m = runIdentity . runVerifierT m
+
+-- | Interprets a function @'Auth' a -> 'AuthM' b@ in verifier-mode
+-- by simply taking the proof-string as an additional argument,
+-- given the hash corresponding to an @'Auth' a@ argument.
+runVerifier' :: Authenticatable a
+             => (Auth a -> AuthM b)
+             -> Hash
+             -> ByteString
+             -> Either AuthError b
+runVerifier' f h = runVerifier (f $ V h)

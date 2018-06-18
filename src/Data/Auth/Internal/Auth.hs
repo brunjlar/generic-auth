@@ -16,12 +16,13 @@ This module defines type Auth and operations on it.
 -}
 
 module Data.Auth.Internal.Auth
-    ( Auth
+    ( Auth (..)
     , authP
     , authV
     , unauthP
     , AuthError (..)
     , unauthV
+    , toHash
     ) where
 
 import Control.Exception                  (Exception)
@@ -60,7 +61,7 @@ unauthP (V _)   = error "illegal Auth for prover"
 data AuthError =
       DeserializationError String -- ^ deserialization error with specified error message
     | AuthenticationError         -- ^ authentication error (hash missmatch)
-    deriving Show
+    deriving (Show, Read, Eq, Ord)
 
 instance Exception AuthError
 
@@ -78,3 +79,8 @@ unauthV (V h)   bs = case decodeOrFail bs of
         | hash a == h -> return (a, bs')
         | otherwise   -> throwError AuthenticationError
 unauthV (P _ _) _  = error "illegal Auth for verifier"
+
+-- | Extracts the @'Hash'@ from an authenticated value.
+toHash :: Binary a => Auth a -> Hash
+toHash (P h _) = h
+toHash (V h)   = h
