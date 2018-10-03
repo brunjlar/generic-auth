@@ -3,7 +3,7 @@ module Data.Auth.Examples.TreeSpec
     ) where
 
 import Control.Monad           (forM_)
-import Data.Auth.Core
+import Data.Auth
 import Data.Auth.Examples.Tree
 import Test.Hspec
 

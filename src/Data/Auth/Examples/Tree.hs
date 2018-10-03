@@ -25,15 +25,13 @@ module Data.Auth.Examples.Tree
     ) where
 
 import Control.Monad.State
-import Data.Auth.Core
-import Data.Binary         (Binary)
-import GHC.Generics
+import Data.Auth
 
 -- | A simple authenticated binary tree type.
 data Tree a =
       Tip a
     | Node (Auth (Tree a)) (Auth (Tree a))
-    deriving (Show, Generic, Binary, Authenticatable)
+    deriving (Show, Generic, Binary)
 
 -- | Describes a direction (@'L'@eft or @'R'@ight), so that
 -- a list of directions gives a path from the root of a @'Tree'@
@@ -42,7 +40,7 @@ data Direction = L | R deriving (Show, Read, Eq, Ord)
 
 -- | Builds a full @'Tree'@ with specified depth and specified tips.
 -- Using a negative depth or providing too few tips causes an error.
-buildTree :: forall a. Authenticatable a => Int -> [a] -> AuthM (Auth (Tree a))
+buildTree :: forall a. Binary a => Int -> [a] -> AuthM (Auth (Tree a))
 buildTree = evalStateT . go
   where
     go :: Int -> StateT [a] AuthM (Auth (Tree a))
@@ -62,7 +60,7 @@ buildTree = evalStateT . go
 --
 -- >>> fst $ runProver $ buildTree 1 ["Alice", "Bob"] >>= lookupTree [L]
 -- Just "Alice"
-lookupTree :: Authenticatable a => [Direction] -> Auth (Tree a) -> AuthM (Maybe a)
+lookupTree :: Binary a => [Direction] -> Auth (Tree a) -> AuthM (Maybe a)
 lookupTree xs at = do
     t <- unauth at
     case (t, xs) of
@@ -78,7 +76,7 @@ lookupTree xs at = do
 -- >>> let (t, _) = runProver exampleTree
 -- >>> let h = toHash t
 -- >>> h
--- a651ca4e022aa8633799d1e717f00b4343ae08131dee9d3aae431f497c7bd7c2
+-- dc0ae1164154d5feb3e03caa239062a8cf9b69492c6ebf76b438335295992e91
 -- >>> let (x, bs) = runProver $ lookupTree [L, L, R] t
 -- >>> x
 -- Just "Bob"

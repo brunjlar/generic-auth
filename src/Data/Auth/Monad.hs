@@ -23,7 +23,8 @@ This module defines the @'AuthT'@ monad transformer and functions to
 run an @'AuthT'@-computation as /prover/ or /verifier/.
 -}
 
-module Data.Auth.Internal.Monad
+module Data.Auth.Monad where
+{-
     ( AuthT
     , AuthM
     , MonadAuth (..)
@@ -39,38 +40,36 @@ module Data.Auth.Internal.Monad
     , runVerifier
     , runVerifier'
     ) where
-
+-}
 import           Control.Applicative
-import           Control.Comonad.Trans.Identity     (IdentityT)
-import           Control.Monad.Catch                (MonadCatch, MonadThrow)
-import           Control.Monad.Cont                 (ContT, MonadCont)
-import           Control.Monad.Except               (ExceptT, MonadError (..),
-                                                     runExceptT)
-import           Control.Monad.Identity             (Identity (..))
-import           Control.Monad.Reader               (MonadIO, MonadPlus,
-                                                     MonadReader (..),
-                                                     MonadTrans (..),
-                                                     ReaderT (..))
-import           Control.Monad.State                (MonadState, StateT, modify,
-                                                     runStateT)
-import qualified Control.Monad.State.Strict         as SS
+import           Control.Comonad.Trans.Identity (IdentityT)
+import           Control.Monad.Catch            (MonadCatch, MonadThrow)
+import           Control.Monad.Cont             (ContT, MonadCont)
+import           Control.Monad.Except           (ExceptT, MonadError (..),
+                                                 runExceptT)
+import           Control.Monad.Identity         (Identity (..))
+import           Control.Monad.Reader           (MonadIO, MonadPlus,
+                                                 MonadReader (..),
+                                                 MonadTrans (..), ReaderT (..))
+import           Control.Monad.State            (MonadState, StateT, modify,
+                                                 runStateT)
+import qualified Control.Monad.State.Strict     as SS
 import           Control.Monad.Trans.Free
-import           Control.Monad.Trans.Iter           (IterT)
-import           Control.Monad.Trans.Maybe          (MaybeT)
-import           Control.Monad.Writer               (MonadWriter (..), WriterT)
-import qualified Control.Monad.Writer.Strict        as WS
-import           Data.Auth.Internal.Auth
-import           Data.Auth.Internal.Authenticatable
-import           Data.Auth.Util.Hash
-import           Data.ByteString.Builder            (Builder, lazyByteString,
-                                                     toLazyByteString)
-import           Data.ByteString.Lazy               (ByteString)
-import           Data.Monoid                        (mempty, (<>))
-import           Pipes                              (ListT)
+import           Control.Monad.Trans.Iter       (IterT)
+import           Control.Monad.Trans.Maybe      (MaybeT)
+import           Control.Monad.Writer           (MonadWriter (..), WriterT)
+import qualified Control.Monad.Writer.Strict    as WS
+import           Data.Auth.Core
+import           Data.Auth.Hash
+import           Data.ByteString.Builder        (Builder, lazyByteString,
+                                                 toLazyByteString)
+import           Data.ByteString.Lazy           (ByteString)
+import           Data.Monoid                    (mempty, (<>))
+import           Pipes                          (ListT)
 
 data AuthF :: * -> * where
-    Auth   :: Authenticatable a => a -> (Auth a -> b) -> AuthF b
-    Unauth :: Authenticatable a => Auth a -> (a -> b) -> AuthF b
+    Auth   :: Binary a => a -> (Auth a -> b) -> AuthF b
+    Unauth :: Binary a => Auth a -> (a -> b) -> AuthF b
 
 deriving instance Functor AuthF
 
@@ -90,12 +89,12 @@ type AuthM = AuthT Identity
 -- | Type class for monads allowing computations involving
 -- authenticated data structures.
 class Monad m => MonadAuth m where
-    auth :: Authenticatable a => a -> m (Auth a)
-    default auth :: (MonadTrans t, MonadAuth n, t n ~ m, Authenticatable a) => a -> m (Auth a)
+    auth :: Binary a => a -> m (Auth a)
+    default auth :: (MonadTrans t, MonadAuth n, t n ~ m, Binary a) => a -> m (Auth a)
     auth = lift . auth
 
-    unauth :: Authenticatable a => Auth a -> m a
-    default unauth :: (MonadTrans t, MonadAuth n, t n ~ m, Authenticatable a) => Auth a -> m a
+    unauth :: Binary a => Auth a -> m a
+    default unauth :: (MonadTrans t, MonadAuth n, t n ~ m, Binary a) => Auth a -> m a
     unauth = lift . unauth
 
 instance Monad m => MonadAuth (AuthT m) where
@@ -187,11 +186,11 @@ verifier (AuthT m) = iterTM verifierF m
 
 -- | Interprets a function @'Auth' a -> 'AuthT' m b@ in a suitable monad
 -- implementing @'MonadVerifier'@, given the hash corresponding to an @'Auth' a@ argument.
-verifier' :: (Monad m, MonadTrans t, MonadVerifier (t m), Authenticatable a)
+verifier' :: (Monad m, MonadTrans t, MonadVerifier (t m), Binary a)
           => (Auth a -> AuthT m b)
           -> Hash
           -> t m b
-verifier' f h = verifier $ f $ V h
+verifier' f h = verifier $ f $ AuthV h
 
 newtype VerifierT m a = VerifierT (ReaderT ByteString (ExceptT AuthError m) a)
     deriving (Functor, Applicative, Monad, MonadReader ByteString, MonadError AuthError)
@@ -210,12 +209,12 @@ runVerifierT m bs =
 -- | Interprets a function @'Auth' a -> 'AuthT' m b@ in verifier-mode
 -- by simply taking the proof-string as an additional argument,
 -- given the hash corresponding to an @'Auth' a@ argument.
-runVerifierT' :: (Authenticatable a, Monad m)
+runVerifierT' :: (Binary a, Monad m)
               => (Auth a -> AuthT m b)
               -> Hash
               -> ByteString
               -> m (Either AuthError b)
-runVerifierT' f h = runVerifierT (f $ V h)
+runVerifierT' f h = runVerifierT (f $ AuthV h)
 
 -- | Interprets an @'AuthM'@-computation in verifier-mode
 -- by simply taking the proof-string as an additional argument.
@@ -231,9 +230,9 @@ runVerifier m = runIdentity . runVerifierT m
 -- | Interprets a function @'Auth' a -> 'AuthM' b@ in verifier-mode
 -- by simply taking the proof-string as an additional argument,
 -- given the hash corresponding to an @'Auth' a@ argument.
-runVerifier' :: Authenticatable a
+runVerifier' :: Binary a
              => (Auth a -> AuthM b)
              -> Hash
              -> ByteString
              -> Either AuthError b
-runVerifier' f h = runVerifier (f $ V h)
+runVerifier' f h = runVerifier (f $ AuthV h)

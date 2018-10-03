@@ -1,7 +1,7 @@
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
-Module      : Data.Auth.Utils.Hash
+Module      : Data.Auth.Hash
 Description : hashing
 Copyright   : (c) Lars Brünjes, 2018
 License     : MIT
@@ -12,7 +12,7 @@ Portability : portable
 This module provides an implementation of cryptographic hashing.
 -}
 
-module Data.Auth.Util.Hash
+module Data.Auth.Hash
     ( Hash
     , hash
     ) where

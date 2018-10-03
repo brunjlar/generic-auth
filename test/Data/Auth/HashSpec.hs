@@ -1,12 +1,12 @@
-module Data.Auth.Util.HashSpec
+module Data.Auth.HashSpec
     ( spec
     ) where
 
-import Data.Auth.Util.Hash
-import Data.Binary         (decodeOrFail, encode)
+import Data.Auth
+import Data.Binary     (decodeOrFail, encode)
 import Test.Hspec
 import Test.QuickCheck
-import Text.Read           (readMaybe)
+import Text.Read       (readMaybe)
 
 spec :: Spec
 spec = describe "Hash" $ do
