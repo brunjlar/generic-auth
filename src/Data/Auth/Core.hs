@@ -44,11 +44,13 @@ deriving instance Show a => Show (Auth a)
 deriving instance Eq a => Eq (Auth a)
 deriving instance Ord a => Ord (Auth a)
 
+-- | Extracts the @'Hash'@ from an authenticated value.
+toHash :: Auth a -> Hash
+toHash (AuthP a) = hash a
+toHash (AuthV h) = h
+
 instance Binary a => Binary (Auth a) where
-
-    put (AuthP a) = put $ hash a
-    put (AuthV h) = put h
-
+    put = put . toHash
     get = AuthV <$> get
 
 -- | Used by the /prover/ to construct an @`Auth` a@.
@@ -87,8 +89,3 @@ unauthV (AuthV h) bs = case decodeOrFail bs of
         | hash a == h -> return (a, bs')
         | otherwise   -> throwError AuthenticationError
 unauthV (AuthP _) _  = error "illegal Auth for verifier"
-
--- | Extracts the @'Hash'@ from an authenticated value.
-toHash :: Auth a -> Hash
-toHash (AuthP a) = hash a
-toHash (AuthV h) = h
