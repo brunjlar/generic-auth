@@ -19,6 +19,7 @@ library
                      , Data.Auth.Core
                      , Data.Auth.Hash
                      , Data.Auth.Monad
+                     , Data.Auth.Examples.AdHocTree
                      , Data.Auth.Examples.List
                      , Data.Auth.Examples.Tree
   build-depends:       base >= 4.11 && < 5
