@@ -46,6 +46,21 @@
 > import           Prelude                 hiding (lookup)
 %endif
 
+\begin{frame}{Agenda}
+    \begin{itemize}
+        \item
+            What are Authenticated data structures?
+        \item
+            Example: Merkle trees.
+        \item
+            A simple ad-hoc ADS.
+        \item
+            ADS's generically.
+        \item
+            Authenticated lists demo.
+    \end{itemize}
+\end{frame}
+
 \begin{frame}{Authenticated data structures}
     \epigraph{An \emph{authenticated datastructure (ADS)}
         is a data structure whose operations can be carried out by an untrusted prover,
@@ -172,7 +187,8 @@ Let' define a type for simple binary trees with data in the leaves\ldots
 \end{frame}
 
 \begin{frame}[fragile]{Tree lookup}
-Following a |Path|, we can |lookup| the value at the corresponding leaf:
+Following a |Path|, we can |lookup| the value at the corresponding leaf
+(ignoring partiality for simplicity's sake):
 > lookup :: Path -> Tree a -> a
 > lookup []        (T a)     = a
 > lookup (d : ds)  (N l r)   =
@@ -310,8 +326,6 @@ the verifier only knows the tree's
             Extend the type system by adding a new type $\lambda a$ for each OCaml
             type $a$.\\
             \pause
-            (No, the authors are \emph{not} looking for Haskell jobs!)
-            \pause
         \item
             Formally add functions $\id{auth}:a\rightarrow\lambda a$ and
             $\id{unauth}:\lambda a\rightarrow a$ which are \emph{inverse}
@@ -388,6 +402,10 @@ the verifier only knows the tree's
 > instance Binary a => Binary (Auth a) where
 >   put = put . toHash
 >   get = V <$> get
+\pause
+Crucially, when we serialize an |Auth a|,
+we ``truncate'' it to its hash, so proofs
+will be ``short''.
 \end{frame}
 
 %if style /= newcode
