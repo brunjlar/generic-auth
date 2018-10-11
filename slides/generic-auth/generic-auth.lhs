@@ -69,6 +69,8 @@
 %format L="\con{L}"
 %format R="\con{R}"
 %format Path="\ty{Path}"
+%format Generic="\cl{Generic}"
+%format Binary="\cl{Binary}"
 %endif
 
 \begin{frame}{A simple tree type}
@@ -289,21 +291,69 @@ the verifier only knows the tree's
     Andrew Miller, Michael Hicks, Jonathan Katz, Elaine Shi,
     describe a generic way to construct authenticated datastructures
     in OCaml.
+    \pause
     \begin{itemize}
         \item
             Extend the type system by adding a new type $\lambda a$ for each OCaml
-            type $a$.
+            type $a$.\\
+            \pause
+            (No, the authors are \emph{not} looking for Haskell jobs!)
+            \pause
         \item
-            Formally add functions $\texttt{auth}:a\rightarrow\lambda a$ and
-            $\texttt{unauth}:\lambda a\rightarrow a$ which are \emph{inverse}
+            Formally add functions $\id{auth}:a\rightarrow\lambda a$ and
+            $\id{unauth}:\lambda a\rightarrow a$ which are \emph{inverse}
             to each other.
+            \pause
         \item
-            Change the compiler, so that $\texttt{auth}$ and $\texttt{unauth}$
+            Change the compiler, so that $\id{auth}$ and $\id{unauth}$
             are treated differently for prover and verifier.
+            \pause
     \end{itemize}
-    \pause
     Instead of modifying GHC, we will instead use a \alert{free monad} to
     achieve a similar effect!
+\end{frame}
+
+\begin{frame}[fragile]{Authenticated Datastructures, Generically (cntd.)}
+    \vspace{1cm}
+    \begin{columns}
+        \column{0.3\textwidth}
+            \begin{minipage}[c][0.9\textheight][t]{\linewidth}
+                \alert{Prover}
+                \begin{itemize}
+                    \item<2->
+                        $\lambda a\sim a$.
+                    \item<3->
+                        $\id{auth}\ a$ does nothing.
+                    \item<4->
+                        $\id{unauth}\ x$ does nothing to get its result,
+                        but writes $x$ to the proof-stream.
+                \end{itemize}
+            \end{minipage}
+        \column{0.3\textwidth}
+            \begin{minipage}[c][0.9\textheight][t]{\linewidth}
+                \[
+                    \begin{tikzcd}[row sep=5cm,column sep=tiny]%
+                        a
+                        \ar[d, bend right=30, "\id{auth}"'] \\
+                        {\lambda a}
+                        \ar[u, bend right=30, "\id{unauth}"'] \\
+                    \end{tikzcd}
+                \]
+            \end{minipage}
+        \column{0.3\textwidth}
+            \begin{minipage}[c][0.9\textheight][t]{\linewidth}
+                \alert{Verifier}
+                \begin{itemize}
+                    \item<2->
+                        $\lambda a\sim\ty{Hash}$.
+                    \item<3->
+                        $\id{auth}\ a$ hashes $a$.
+                    \item<4->
+                        $\id{unauth}\ h$ reads $a$ from the
+                        proof-stream and checks that |hash a == h|.
+                \end{itemize}
+            \end{minipage}
+    \end{columns}
 \end{frame}
 
 %if style /= newcode

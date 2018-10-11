@@ -46,7 +46,7 @@ deriving instance Ord a => Ord (Auth a)
 
 -- | Extracts the @'Hash'@ from an authenticated value.
 toHash :: Auth a -> Hash
-toHash\n (AuthP a) = hash a
+toHash (AuthP a) = hash a
 toHash (AuthV h) = h
 
 instance Binary a => Binary (Auth a) where
