@@ -53,63 +53,17 @@
     }{\textit{Andrew Miller et al.}}
 \end{frame}
 
-\begin{frame}{Merkle trees}
-    In Bitcoin, Merkle trees are used to enable
-    Simple Payment Verification (SPV) nodes.\vspace{-5mm}
-    \begin{center}
-        \includegraphics[width=0.8\textwidth,natwidth=800,natheight=509]{MerkleTree.svg}
-        \captionof{figure}{Example Merkle tree \emph{(Wikipedia)}}
-    \end{center}
-\end{frame}
-
-%if style /= newcode
-%format T="\con{T}"
-%format N="\con{N}"
-%format Direction="\ty{Direction}"
-%format L="\con{L}"
-%format R="\con{R}"
-%format Path="\ty{Path}"
-%format Generic="\cl{Generic}"
-%format Binary="\cl{Binary}"
-%endif
-
-\begin{frame}{A simple tree type}
-Let' define a type for simple binary trees with data in the leaves\ldots
-> data Tree a = T a | N (Tree a) (Tree a)
->   deriving (Show, Generic, Binary)
+\begin{frame}{Rough idea}
+How can this possibly work?\\[1cm]
 \pause
-\ldots and types representing paths in such trees:
-> data Direction = L | R deriving Show
-> type Path = [Direction]
-\end{frame}
-
-\begin{frame}[fragile]{Tree lookup}
-Following a |Path|, we can |lookup| the value at the corresponding leaf:
-> lookup :: Path -> Tree a -> a
-> lookup []        (T a)     = a
-> lookup (d : ds)  (N l r)   =
->   lookup ds $ case d of L -> l; R -> r
-
-\begin{columns}
-\column{0.65\textwidth}
-\small
-< >>> let t = N (N (T 1) (T 2)) (T 3)
-< >>> lookup [L,R] t
-< 2
-\column{0.25\textwidth}
-\[
-    \begin{tikzcd}[row sep=small,column sep=tiny]%
-        & & \cdot \ar[ld] \ar[rd] \\
-        & \cdot \ar[ld] \ar[rd] & & 3 \\
-        1 & & 2 \\
-    \end{tikzcd}
-\]
-\end{columns}
+The rough idea is to use (cryptographic) \alert{hashing}:
+The verifier just needs hashe(s) of the datastructure(s),
+the prover includes preimages to those hashes in its proofs.
 \end{frame}
 
 \begin{frame}{Cryptographic Hash functions}
     A (cryptographically secure) \emph{hash function}
-    is a function $H$ that takes arbitrary bitstrings to
+    is a function that takes arbitrary bitstrings to
     bitstrings of a fixed length with the following
     additional properties:
 
@@ -183,6 +137,62 @@ For these slides, we'll use \alert{MD5}, but any hashing algorithm would do.
 
 < >>> hash (42 :: Int)
 < hash42
+\end{frame}
+
+\begin{frame}{Merkle trees}
+    In Bitcoin, Merkle trees are used to enable
+    Simple Payment Verification (SPV) nodes.\vspace{-5mm}
+    \begin{center}
+        \includegraphics[width=0.8\textwidth,natwidth=800,natheight=509]{MerkleTree.svg}
+        \captionof{figure}{Example Merkle tree \emph{(Wikipedia)}}
+    \end{center}
+\end{frame}
+
+%if style /= newcode
+%format T="\con{T}"
+%format N="\con{N}"
+%format Direction="\ty{Direction}"
+%format L="\con{L}"
+%format R="\con{R}"
+%format Path="\ty{Path}"
+%format Generic="\cl{Generic}"
+%format Binary="\cl{Binary}"
+%endif
+
+\begin{frame}{A simple tree type}
+Instead of Merkle trees, we will consider a very similar type
+as our running example:\\
+Let' define a type for simple binary trees with data in the leaves\ldots
+> data Tree a = T a | N (Tree a) (Tree a)
+>   deriving (Show, Generic, Binary)
+\pause
+\ldots and types representing paths in such trees:
+> data Direction = L | R deriving Show
+> type Path = [Direction]
+\end{frame}
+
+\begin{frame}[fragile]{Tree lookup}
+Following a |Path|, we can |lookup| the value at the corresponding leaf:
+> lookup :: Path -> Tree a -> a
+> lookup []        (T a)     = a
+> lookup (d : ds)  (N l r)   =
+>   lookup ds $ case d of L -> l; R -> r
+
+\begin{columns}
+\column{0.65\textwidth}
+\small
+< >>> let t = N (N (T 1) (T 2)) (T 3)
+< >>> lookup [L,R] t
+< 2
+\column{0.25\textwidth}
+\[
+    \begin{tikzcd}[row sep=small,column sep=tiny]%
+        & & \cdot \ar[ld] \ar[rd] \\
+        & \cdot \ar[ld] \ar[rd] & & 3 \\
+        1 & & 2 \\
+    \end{tikzcd}
+\]
+\end{columns}
 \end{frame}
 
 %if style /= newcode
@@ -274,11 +284,14 @@ the verifier only knows the tree's
 \begin{frame}{Disadvantages}
     \begin{itemize}
         \item<1->
+            We had to implement more or less the same algorithm twice,
+            once for the prover, once for the verifier.
+        \item<2->
             Functions |prove| and |verify| have to be carefully designed
             for this to work.
-        \item<2->
+        \item<3->
             We had to come of with the custom hash function |hash'|.
-        \item<3>
+        \item<4>
             If we want to use a data structure other than |Tree|
             or want to support more operations that just |lookup|,
             we have to think and work hard and do a new proof of correctness.
@@ -619,10 +632,6 @@ As another simple example, we can define \alert{authenticated lists}\ldots
     \item
         GitHub: \texttt{https://github.com/brunjlar/generic-auth}
 \end{itemize}
-\end{frame}
-
-\begin{frame}{IOHK is hiring!}
-\includegraphics{logo}
 \end{frame}
 
 \end{document}
