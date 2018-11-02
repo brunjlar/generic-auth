@@ -45,9 +45,10 @@ buildTree = evalStateT . go
   where
     go :: Int -> StateT [a] AuthM (Auth (Tree a))
     go 0 = do
-        (y : ys) <- get
-        put ys
-        lift $ auth $ Tip y
+        xs <- get
+        case xs of
+            []       -> error "buildTree: not enough tips"
+            (y : ys) -> put ys >> (lift $ auth $ Tip y)
     go d
         | d < 0     = error "negative depth"
         | otherwise = do

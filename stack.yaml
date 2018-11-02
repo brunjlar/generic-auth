@@ -1,10 +1,11 @@
-resolver: lts-12.11
+resolver: nightly-2018-11-02
 packages:
 - .
-extra-deps: []
+extra-deps:
+- git: https://github.com/janpath/intero.git
+  commit: c32d87a170495d106744c3f7275a9d24ed0e3e42
 flags: {}
 extra-package-dbs: []
-allow-newer: true
 nix:
     enable: true
     shell-file: shell.nix

@@ -39,9 +39,10 @@ buildTree = evalState . go
   where
     go :: Int -> State [a] (Tree a)
     go 0 = do
-        (y : ys) <- get
-        put ys
-        return $ Tip y
+        xs <- get
+        case xs of
+            []       -> error "buildTree: not enough tips"
+            (y : ys) -> put ys >> return (Tip y)
     go d
         | d < 0     = error "negative depth"
         | otherwise = let d' = d - 1 in Node <$> go d' <*> go d'
