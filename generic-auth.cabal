@@ -22,6 +22,8 @@ library
                      , Data.Auth.Examples.AdHocTree
                      , Data.Auth.Examples.List
                      , Data.Auth.Examples.Tree
+                     , Data.Fix
+                     , Data.Fix.Examples
   build-depends:       base >= 4.11 && < 5
                      , base16-bytestring
                      , binary
