@@ -22,6 +22,9 @@ library
                      , Data.Auth.Examples.AdHocTree
                      , Data.Auth.Examples.List
                      , Data.Auth.Examples.Tree
+                     , Data.AuthFix.Monad
+                     , Data.AuthFix.Prover
+                     , Data.AuthFix.Verifier
                      , Data.Fix
                      , Data.Fix.Examples
   build-depends:       base >= 4.11 && < 5
@@ -29,6 +32,7 @@ library
                      , binary
                      , bytestring
                      , comonad
+                     , containers
                      , cryptonite
                      , exceptions
                      , free
