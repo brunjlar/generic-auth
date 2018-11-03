@@ -1,6 +1,7 @@
-{-# LANGUAGE QuantifiedConstraints #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE QuantifiedConstraints  #-}
+{-# LANGUAGE StandaloneDeriving     #-}
+{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
@@ -22,7 +23,11 @@ module Data.Fix
     , cata
     , ana
     , hylo
+    , para
+    , apo
     ) where
+
+import Control.Arrow ((&&&))
 
 newtype Fix f = Wrap (f (Fix f))
 
@@ -85,3 +90,17 @@ ana g = wrap . fmap (ana g) . g
 -- @
 hylo :: Functor f => (a -> f a) -> (f b -> b) -> a -> b
 hylo g h = h . fmap (hylo g h) . g
+
+-- | A /paramorphism/, also called "primitive recursion".
+para :: forall f a. Functor f => (f (a, Fix f) -> a) -> Fix f -> a
+para g = fst . cata h
+  where
+    h :: f (a, Fix f) -> (a, Fix f)
+    h = g &&& (wrap . fmap snd)
+
+-- | An /apomorphism, also called "primitive corecursion".
+apo :: forall f a. Functor f => (a -> f (Either a (Fix f))) -> a -> Fix f
+apo g = ana h . Left
+  where
+    h :: Either a (Fix f) -> f (Either a (Fix f))
+    h = either g (fmap Right . unwrap)
