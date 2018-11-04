@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_HADDOCK show-extensions #-}
+{-# LANGUAGE QuantifiedConstraints      #-}
+{-# OPTIONS_HADDOCK show-extensions     #-}
 
 {-|
 Module      : Data.AuthFix.Monad

@@ -22,6 +22,7 @@ library
                      , Data.Auth.Examples.AdHocTree
                      , Data.Auth.Examples.List
                      , Data.Auth.Examples.Tree
+                     , Data.AuthFix.Example
                      , Data.AuthFix.Monad
                      , Data.AuthFix.Prover
                      , Data.AuthFix.Verifier
@@ -32,7 +33,6 @@ library
                      , binary
                      , bytestring
                      , comonad
-                     , containers
                      , cryptonite
                      , exceptions
                      , free

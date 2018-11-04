@@ -17,6 +17,7 @@ This module defines an interpretation of the abstract authentication monad for p
 
 module Data.AuthFix.Prover
     ( ProverT (..)
+    , P
     , runAuthProverT
     , runAuthProverSimpleT
     , runAuthProverSimple
@@ -24,37 +25,45 @@ module Data.AuthFix.Prover
 
 import Control.Monad.State      (MonadTrans, StateT (..), modify)
 import Control.Monad.Trans.Free
-import Data.Foldable            (toList)
+import Data.Binary              (Binary (..), encode)
+import Data.ByteString.Builder  (Builder, lazyByteString, toLazyByteString)
+import Data.ByteString.Lazy     (ByteString)
 import Data.Functor.Identity    (Identity (..))
-import Data.Sequence            (Seq ((:|>)), empty)
 
-import Data.Auth.Hash           (Hash, hash)
+import Data.Auth.Hash           (hash)
 import Data.AuthFix.Monad
 
-newtype ProverT m a = ProverT {runProverT :: FreeT ((,) Hash) m a}
-    deriving (Functor, Applicative, Monad, MonadTrans, MonadFree ((,) Hash))
+newtype ProverT m a = ProverT {runProverT :: FreeT ((,) ByteString) m a}
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadFree ((,) ByteString))
 
-write :: Monad m => Hash -> ProverT m ()
+write :: Monad m => ByteString -> ProverT m ()
 write bs = liftF $ (bs, ())
 
-runAuthProverT :: Monad m => AuthT Identity m a -> ProverT m a
+newtype P a = P {getP :: a}
+    deriving (Show, Eq, Ord)
+
+instance Binary a => Binary (P a) where
+    put (P a) = put $ hash a
+    get = error "P: get not supported"
+
+runAuthProverT :: Monad m => AuthT P m a -> ProverT m a
 runAuthProverT = foldFreeT g . runAuthT
   where
-    g (A b h) = return $ h $ Identity b
+    g (A b h) = return $ h $ P b
     g (U fb h) = do
-        let b = runIdentity fb
-        write $ hash b
+        let b = getP fb
+        write $ encode b
         return $ h b
 
-proverToState :: Monad m => ProverT m a -> StateT (Seq Hash) m a
+proverToState :: Monad m => ProverT m a -> StateT Builder m a
 proverToState = foldFreeT g . runProverT
   where
-    g (h, x) = modify (:|> h) >> return x
+    g (bs, x) = modify (<> lazyByteString bs) >> return x
 
-runAuthProverSimpleT :: Monad m => AuthT Identity m a -> m (a, [Hash])
+runAuthProverSimpleT :: Monad m => AuthT P m a -> m (a, ByteString)
 runAuthProverSimpleT x = do
-    (a, s) <- runStateT (proverToState $ runAuthProverT x) empty
-    return (a, toList s)
+    (a, b) <- runStateT (proverToState $ runAuthProverT x) mempty
+    return (a, toLazyByteString b)
 
-runAuthProverSimple :: Auth Identity a -> (a, [Hash])
+runAuthProverSimple :: Auth P a -> (a, ByteString)
 runAuthProverSimple = runIdentity . runAuthProverSimpleT
