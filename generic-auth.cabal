@@ -23,6 +23,9 @@ library
                      , Data.Auth.Examples.List
                      , Data.Auth.Examples.Tree
                      , Data.AuthFix.Example
+                     , Data.AuthFix.Fix
+                     , Data.AuthFix.Fix.Example
+                     , Data.AuthFix.Kleisli
                      , Data.AuthFix.Monad
                      , Data.AuthFix.Prover
                      , Data.AuthFix.Verifier
