@@ -1,8 +1,13 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE TupleSections       #-}
+
+{-# OPTIONS_GHC -Wno-deprecations #-}
 
 {-# OPTIONS_HADDOCK show-extensions #-}
 
@@ -38,17 +43,20 @@ import           Data.Auth
 infixr 5 :>
 
 -- | An authenticated list.
-data List a = Nil | a :> Auth (List a)
-    deriving (Show, Generic, Binary)
+data List i a = Nil | a :> Auth i (List i a)
+    deriving (Show, Generic)
+
+deriving instance Binary a => Binary (List 'P a)
+deriving instance Binary a => Binary (List 'V a)
 
 -- | Converts a standard list into an authenticated list.
 --
 -- >>> fst $ runProver $ fromList "Haskell"
 -- 'H' :> AuthP ('a' :> AuthP ('s' :> AuthP ('k' :> AuthP ('e' :> AuthP ('l' :> AuthP ('l' :> AuthP Nil))))))
-fromList :: (MonadAuth m, Binary a) => [a] -> m (List a)
+fromList :: (MonadAuth i m, Binary (List i a)) => [a] -> m (List i a)
 fromList = foldr f $ return Nil
   where
-    f x m = m >>= auth >>= return . (x :>)
+    f x m = (x :>) <$> (m >>= auth)
 
 data Command = Push Int | Pop
     deriving (Show, Read, Eq, Ord)
@@ -56,7 +64,10 @@ data Command = Push Int | Pop
 data Result = RPush | RPop (Maybe Int)
     deriving (Show, Read, Eq, Ord)
 
-executeCommand :: MonadAuth m => Command -> Auth (List Int) -> m (Result, Auth (List Int))
+executeCommand :: (MonadAuth i m, Binary (List i Int))
+               => Command
+               -> Auth i (List i Int)
+               -> m (Result, Auth i (List i Int))
 executeCommand (Push n) a = (RPush,) <$> auth (n :> a)
 executeCommand Pop      a = do
     l <- unauth a
@@ -64,7 +75,10 @@ executeCommand Pop      a = do
         Nil    -> (RPop Nothing, a)
         n :> b -> (RPop (Just n), b)
 
-executeCommandLying :: MonadAuth m => Command -> Auth (List Int) -> m (Result, Auth (List Int))
+executeCommandLying :: (MonadAuth i m, Binary (List i Int))
+                    => Command
+                    -> Auth i (List i Int)
+                    -> m (Result, Auth i (List i Int))
 executeCommandLying (Push 42) a = executeCommand (Push 43) a
 executeCommandLying c         a = executeCommand c a
 
@@ -75,10 +89,10 @@ proverIO lie port = do
     putStrLn $ "prover listening on port " ++ show port
     (h, _, _) <- accept s
     hSetBuffering h LineBuffering
-    putStrLn $ "accepted verifier connection"
-    go h nilAuth
+    putStrLn "accepted verifier connection"
+    go h $ authP Nil
   where
-    go :: Handle -> Auth (List Int) -> IO ()
+    go :: Handle -> Auth 'P (List 'P Int) -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s
         c <- read <$> hGetLine h
@@ -97,12 +111,12 @@ verifierIO port = do
     h <- connectTo "127.0.0.1" $ PortNumber port
     hSetBuffering h LineBuffering
     putStrLn $ "connected to prover on port " ++ show port
-    go h nilAuth
+    go h $ authV Nil
   where
-    go :: Handle -> Auth (List Int) -> IO ()
+    go :: Handle -> Auth 'V (List 'V Int) -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s
-        putStrLn $ "enter command!"
+        putStrLn "enter command!"
         mc <- readMaybe <$> getLine
         case mc of
             Nothing -> putStrLn "commands are 'Push INT' or 'Pop'" >> go h s
@@ -115,9 +129,6 @@ verifierIO port = do
                 case e of
                     Left err       -> putStrLn $ "ERROR: " ++ show err
                     Right (res, t) -> putStrLn ("RESULT: " ++ show res) >> go h t
-
-nilAuth :: Auth (List Int)
-nilAuth = fst $ runProver $ auth Nil
 
 toHex :: ByteString -> String
 toHex = B8.unpack . B16.encode . toStrict

@@ -1,6 +1,10 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving  #-}
 
 {-# OPTIONS_HADDOCK show-extensions #-}
 
@@ -28,10 +32,13 @@ import Control.Monad.State
 import Data.Auth
 
 -- | A simple authenticated binary tree type.
-data Tree a =
+data Tree i a =
       Tip a
-    | Node (Auth (Tree a)) (Auth (Tree a))
-    deriving (Show, Generic, Binary)
+    | Node (Auth i (Tree i a)) (Auth i (Tree i a))
+    deriving (Show, Generic)
+
+deriving instance Binary a => Binary (Tree 'P a)
+deriving instance Binary a => Binary (Tree 'V a)
 
 -- | Describes a direction (@'L'@eft or @'R'@ight), so that
 -- a list of directions gives a path from the root of a @'Tree'@
@@ -40,15 +47,15 @@ data Direction = L | R deriving (Show, Read, Eq, Ord)
 
 -- | Builds a full @'Tree'@ with specified depth and specified tips.
 -- Using a negative depth or providing too few tips causes an error.
-buildTree :: forall a. Binary a => Int -> [a] -> AuthM (Auth (Tree a))
+buildTree :: forall i a. Binary (Tree i a) => Int -> [a] -> AuthM i (Auth i (Tree i a))
 buildTree = evalStateT . go
   where
-    go :: Int -> StateT [a] AuthM (Auth (Tree a))
+    go :: Int -> StateT [a] (AuthM i) (Auth i (Tree i a))
     go 0 = do
         xs <- get
         case xs of
             []       -> error "buildTree: not enough tips"
-            (y : ys) -> put ys >> (lift $ auth $ Tip y)
+            (y : ys) -> put ys >> lift (auth $ Tip y)
     go d
         | d < 0     = error "negative depth"
         | otherwise = do
@@ -61,7 +68,7 @@ buildTree = evalStateT . go
 --
 -- >>> fst $ runProver $ buildTree 1 ["Alice", "Bob"] >>= lookupTree [L]
 -- Just "Alice"
-lookupTree :: Binary a => [Direction] -> Auth (Tree a) -> AuthM (Maybe a)
+lookupTree :: Binary (Tree i a) => [Direction] -> Auth i (Tree i a) -> AuthM i (Maybe a)
 lookupTree xs at = do
     t <- unauth at
     case (t, xs) of
@@ -84,5 +91,13 @@ lookupTree xs at = do
 -- >>> runVerifier' (lookupTree [L, L, R]) h bs :: Either AuthError (Maybe String)
 -- Right (Just "Bob")
 --
-exampleTree :: AuthM (Auth (Tree String))
-exampleTree = buildTree 3 ["Alice", "Bob", "Charlie", "Doris", "Eric", "Fred", "Gina", "Heather"]
+exampleTree :: Binary (Tree i String) => AuthM i (Auth i (Tree i String))
+exampleTree = buildTree 3 [ "Alice"
+                          , "Bob"
+                          , "Charlie"
+                          , "Doris"
+                          , "Eric"
+                          , "Fred"
+                          , "Gina"
+                          , "Heather"
+                          ]

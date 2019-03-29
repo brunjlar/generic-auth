@@ -16,9 +16,12 @@ necessary to work with authenticated data structures.
 module Data.Auth
     ( Binary
     , Generic
+    , Mode (..)
     , Auth
     , AuthError (..)
     , toHash
+    , authP
+    , authV
     , module Data.Auth.Hash
     , module Data.Auth.Monad
     ) where
