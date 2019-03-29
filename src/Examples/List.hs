@@ -12,7 +12,7 @@
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
-Module      : Data.Auth.Examples.List
+Module      : Examples.List
 Description : authenticated list example
 Copyright   : (c) Lars Brünjes, 2019
 License     : MIT
@@ -23,7 +23,7 @@ Portability : portable
 This module provides the example of authenticated lists.
 -}
 
-module Data.Auth.Examples.List
+module Examples.List
     ( List (..)
     , PortNumber
     , fromList

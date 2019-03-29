@@ -8,7 +8,7 @@ main = do
             , "src/Data/Auth/Hash.hs"
             ]
     doctest [ "src/Data/Auth/Monad.hs"
-            , "src/Data/Auth/Examples/AdHocTree.hs"
-            , "src/Data/Auth/Examples/List.hs"
-            , "src/Data/Auth/Examples/Tree.hs"
+            , "src/Examples/AdHocTree.hs"
+            , "src/Examples/List.hs"
+            , "src/Examples/Tree.hs"
             ]

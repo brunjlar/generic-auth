@@ -9,7 +9,7 @@
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
-Module      : Data.Auth.Examples.Tree
+Module      : Examples.Tree
 Description : authenticated binary tree example
 Copyright   : (c) Lars Brünjes, 2018
 License     : MIT
@@ -20,7 +20,7 @@ Portability : portable
 This module provides the example of authenticated binary trees.
 -}
 
-module Data.Auth.Examples.Tree
+module Examples.Tree
     ( Tree (..)
     , Direction (..)
     , lookupTree

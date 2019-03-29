@@ -5,7 +5,7 @@
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
-Module      : Data.Auth.Examples.AdHocTree
+Module      : Examples.AdHocTree
 Description : ad hoc binary tree example
 Copyright   : (c) Lars Brünjes, 2018
 License     : MIT
@@ -16,7 +16,7 @@ Portability : portable
 This module provides the example of ad hoc binary trees.
 -}
 
-module Data.Auth.Examples.AdHocTree where
+module Examples.AdHocTree where
 
 import Control.Monad.State
 

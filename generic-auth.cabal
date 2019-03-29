@@ -19,10 +19,10 @@ library
                      , Data.Auth.Core
                      , Data.Auth.Hash
                      , Data.Auth.Monad
-                     , Data.Auth.Examples.AdHocTree
-                     , Data.Auth.Examples.List
-                     , Data.Auth.Examples.Tree
                      , Data.Auth.Serialize
+                     , Examples.AdHocTree
+                     , Examples.List
+                     , Examples.Tree
   build-depends:       base >= 4.11 && < 5
                      , base16-bytestring
                      , binary
@@ -50,8 +50,8 @@ test-suite test
                      , hspec
                      , generic-auth
                      , QuickCheck
-  other-modules:       Data.Auth.Examples.TreeSpec
-                     , Data.Auth.HashSpec
+  other-modules:       Data.Auth.HashSpec
+                     , Examples.TreeSpec
   ghc-options:         -Wall
   default-language:    Haskell2010
 

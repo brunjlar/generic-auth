@@ -1,7 +1,7 @@
-import System.Environment      (getArgs)
-import Text.Read               (readMaybe)
+import System.Environment (getArgs)
+import Text.Read          (readMaybe)
 
-import Data.Auth.Examples.List
+import Examples.List
 
 main :: IO ()
 main = do
