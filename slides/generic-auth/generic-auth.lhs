@@ -309,7 +309,7 @@ the verifier only knows the tree's
             We had to come of with the custom hash function |hash'|.
         \item<4>
             If we want to use a data structure other than |Tree|
-            or want to support more operations that just |lookup|,
+            or want to support more operations than just |lookup|,
             we have to think and work hard and do a new proof of correctness.
     \end{itemize}
 \end{frame}
