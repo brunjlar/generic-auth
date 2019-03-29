@@ -14,7 +14,7 @@
 {-|
 Module      : Data.Auth.Examples.List
 Description : authenticated list example
-Copyright   : (c) Lars Brünjes, 2018
+Copyright   : (c) Lars Brünjes, 2019
 License     : MIT
 Maintainer  : brunjlar@gmail.com
 Stability   : experimental
@@ -33,7 +33,8 @@ module Data.Auth.Examples.List
 
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8  as B8
-import           Data.ByteString.Lazy   (ByteString, fromStrict, toStrict)
+import           Data.ByteString.Lazy   (ByteString, empty, fromStrict,
+                                         toStrict)
 import           Network
 import           System.IO              (BufferMode (..), Handle, hGetLine,
                                          hPrint, hPutStrLn, hSetBuffering)
@@ -47,14 +48,16 @@ infixr 5 :>
 data List i a = Nil | a :> Auth i (List i a)
     deriving (Show, Generic)
 
-deriving instance Binary a => Binary (List 'P a)
-deriving instance Binary a => Binary (List 'V a)
+deriving instance Serializable a => Serializable (List 'P a)
+deriving instance Serializable a => Serializable (List 'V a)
+deriving instance Deserializable a => Deserializable (List 'P a)
+deriving instance Deserializable a => Deserializable (List 'V a)
 
 -- | Converts a standard list into an authenticated list.
 --
 -- >>> fst $ runProver $ fromList "Haskell"
 -- 'H' :> AuthP ('a' :> AuthP ('s' :> AuthP ('k' :> AuthP ('e' :> AuthP ('l' :> AuthP ('l' :> AuthP Nil))))))
-fromList :: (MonadAuth i m, Binary (List i a)) => [a] -> m (List i a)
+fromList :: (MonadAuth i m, Serializable (List i a)) => [a] -> m (List i a)
 fromList = foldr f $ return Nil
   where
     f x m = (x :>) <$> (m >>= auth)
@@ -65,7 +68,10 @@ data Command = Push Int | Pop
 data Result = RPush | RPop (Maybe Int)
     deriving (Show, Read, Eq, Ord)
 
-executeCommand :: (MonadAuth i m, Binary (List i Int))
+executeCommand :: ( MonadAuth i m
+                  , Serializable (List i Int)
+                  , Deserializable (List i Int)
+                  )
                => Command
                -> Auth i (List i Int)
                -> m (Result, Auth i (List i Int))
@@ -76,14 +82,17 @@ executeCommand Pop      a = do
         Nil    -> (RPop Nothing, a)
         n :> b -> (RPop (Just n), b)
 
-executeCommandLying :: (MonadAuth i m, Binary (List i Int))
+executeCommandLying :: MonadAuth 'P m
                     => Command
-                    -> Auth i (List i Int)
-                    -> m (Result, Auth i (List i Int))
+                    -> Auth 'P (List 'P Int)
+                    -> m (Result, Auth 'P (List 'P Int))
 executeCommandLying (Push 42) a = executeCommand (Push 43) a
 executeCommandLying c         a = executeCommand c a
 
-proverIO :: Bool -> PortNumber -> IO ()
+-- | Starts the prover server.
+proverIO :: Bool       -- ^ Indicates whether the prover should lie when pushing 42.
+         -> PortNumber -- ^ The port to run on.
+         -> IO ()
 proverIO lie port = do
     putStrLn $ (if lie then "lying " else "") ++ "prover started"
     s <- listenOn $ PortNumber port
@@ -91,8 +100,12 @@ proverIO lie port = do
     (h, _, _) <- accept s
     hSetBuffering h LineBuffering
     putStrLn "accepted verifier connection"
-    go h $ authP Nil
+    go h nilP
   where
+
+    nilP :: Auth 'P (List 'P Int)
+    nilP = fst $ runProver $ auth Nil
+
     go :: Handle -> Auth 'P (List 'P Int) -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s
@@ -106,14 +119,20 @@ proverIO lie port = do
         hPutStrLn h bs'
         go h t
 
-verifierIO :: PortNumber -> IO ()
+-- | Runs the verifier.
+verifierIO :: PortNumber -- ^ The port to connect to.
+           -> IO ()
 verifierIO port = do
     putStrLn "verifier started"
     h <- connectTo "127.0.0.1" $ PortNumber port
     hSetBuffering h LineBuffering
     putStrLn $ "connected to prover on port " ++ show port
-    go h $ authV Nil
+    go h nilV
   where
+
+    nilV :: Auth 'V (List 'V Int)
+    nilV = let Right x = runVerifier (auth Nil) empty in x
+
     go :: Handle -> Auth 'V (List 'V Int) -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s

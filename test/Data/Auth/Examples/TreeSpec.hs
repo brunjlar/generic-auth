@@ -1,20 +1,21 @@
+{-# LANGUAGE DataKinds #-}
+
 module Data.Auth.Examples.TreeSpec
     ( spec
     ) where
 
 import Control.Monad           (forM_)
-import Data.Auth
-import Data.Auth.Examples.Tree
 import Test.Hspec
 
+import Data.Auth
+import Data.Auth.Examples.Tree
+
 spec :: Spec
-spec = describe "lookupTree" $ do
-    let (t, _) = runProver exampleTree
-        h      = toHash t
+spec = describe "lookupTree" $
     forM_ paths $ \p ->
         it ("can be verified for path " ++ show p) $ do
-            let (x, bs) = runProver $ lookupTree p t
-            runVerifier' (lookupTree p) h bs `shouldBe` Right x
+            let (x, bs) = runProver $ lookupTree p exampleTreeP
+            runVerifier (lookupTree p exampleTreeV) bs `shouldBe` Right x
 
 paths :: [[Direction]]
 paths = do

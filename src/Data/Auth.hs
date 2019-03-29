@@ -14,19 +14,23 @@ necessary to work with authenticated data structures.
 -}
 
 module Data.Auth
-    ( Binary
+    ( ByteString
+    , Serializable
+    , Deserializable
     , Generic
     , Mode (..)
     , Auth
     , AuthError (..)
-    , toHash
-    , authP
-    , authV
+    , serialize
+    , deserialize
     , module Data.Auth.Hash
     , module Data.Auth.Monad
     ) where
 
+import Data.ByteString.Lazy (ByteString)
+import GHC.Generics
+
 import Data.Auth.Core
 import Data.Auth.Hash
 import Data.Auth.Monad
-import GHC.Generics
+import Data.Auth.Serialize

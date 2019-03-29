@@ -18,13 +18,16 @@ module Data.Auth.Hash
     ) where
 
 import qualified Crypto.Hash            as C
-import           Data.Binary            (Binary (..), encode)
+import           Data.Binary            (Binary)
+import qualified Data.Binary            as B
 import qualified Data.ByteArray         as A
 import qualified Data.ByteString        as B
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8  as B8
 import           Data.ByteString.Lazy   (toStrict)
 import           Test.QuickCheck
+
+import           Data.Auth.Serialize
 
 -- | A /hash/, implemented as a SHA256 digest.
 newtype Hash = Hash {getHash :: C.Digest C.SHA256}
@@ -50,12 +53,18 @@ instance Read Hash where
 instance Binary Hash where
 
     get = do
-        md <- (C.digestFromByteString . B.pack) <$> get
+        md <- C.digestFromByteString . B.pack <$> get
         case md of
             Nothing -> fail "expected hash"
             Just d  -> return $ Hash d
 
     put = put . A.unpack . getHash
+
+instance Serializable Hash where
+    put = B.put
+
+instance Deserializable Hash where
+    get = B.get
 
 instance Arbitrary Hash where
 
@@ -70,7 +79,7 @@ instance Arbitrary Hash where
 -- because the constructor of @'Hash'@ is not exported.
 --
 -- >>> hash "xyz"
--- da5e5e70038e631c22d902e912e605cff9dd71a0180bd4c2681447e6bd7fca7c
+-- d5554fb30e572f7a125e1b42223fd77c866a9773a3435b9c268dbe5dc3175957
 --
-hash :: Binary a => a -> Hash
-hash = Hash . C.hash . toStrict . encode
+hash :: Serializable a => a -> Hash
+hash = Hash . C.hash . toStrict . serialize

@@ -19,13 +19,14 @@ This module provides the example of ad hoc binary trees.
 module Data.Auth.Examples.AdHocTree where
 
 import Control.Monad.State
+
 import Data.Auth
 
 -- | A simple binary tree type.
 data Tree a =
       Tip a
     | Node (Tree a) (Tree a)
-    deriving (Show, Generic, Binary)
+    deriving (Show, Generic, Serializable)
 
 -- | Describes a direction (@'L'@eft or @'R'@ight), so that
 -- a list of directions gives a path from the root of a @'Tree'@
@@ -49,7 +50,7 @@ buildTree = evalState . go
 
 -- | Hashes a tree by using the hash of the value at tips and the hash
 -- of the pair of hashes of the children for nodes.
-hash' :: Binary a => Tree a -> Hash
+hash' :: Serializable a => Tree a -> Hash
 hash' (Tip a)    = hash a
 hash' (Node l r) = hash (hash' l, hash' r)
 
@@ -57,8 +58,9 @@ hash' (Node l r) = hash (hash' l, hash' r)
 -- Throws an error if the path does not lead to a tip.
 --
 -- >>> lookupTree [L] $ buildTree 1 ["Alice", "Bob"]
--- ("Alice",[(269a4cb9ff8b0330c43c9271c42ef60ffd0ad24103fcfaf3284c7295c43af7e5,9e15ae465acb02add61af20819223c5ff6045ccd0ce65c53965c8b8a29162894)])
-lookupTree :: Binary a => [Direction] -> Tree a -> (a, [(Hash, Hash)])
+-- ("Alice",[(fabad396304c47fff5efff4cfbf554dd982b6639c21045b087376685bdbd87a2,57b6b1f0ef29c035a7693dc5ff42f9b01cfb56da4c0ccce7fe0ea4aafa613678)])
+--
+lookupTree :: Serializable a => [Direction] -> Tree a -> (a, [(Hash, Hash)])
 lookupTree []       (Tip a)    = (a, [])
 lookupTree (d : xs) (Node l r) =
     let (a, hs) = lookupTree xs $ case d of L -> l; R -> r
@@ -70,7 +72,7 @@ lookupTree _        _          = error "illegal path"
 -- >>> let t = buildTree 1 ["Alice", "Bob"]
 -- >>> checkLookup [R] (hash' t) $ lookupTree [R] t
 -- True
-checkLookup :: Binary a => [Direction] -> Hash -> (a, [(Hash, Hash)]) -> Bool
+checkLookup :: Serializable a => [Direction] -> Hash -> (a, [(Hash, Hash)]) -> Bool
 checkLookup []       h (a, [])          = h == hash a
 checkLookup (d : xs) h (a, (l, r) : hs) =
     h == hash (l, r) && checkLookup xs (case d of L -> l; R -> r) (a, hs)
