@@ -25,6 +25,7 @@ This module provides the example of authenticated lists.
 
 module Data.Auth.Examples.List
     ( List (..)
+    , PortNumber
     , fromList
     , proverIO
     , verifierIO
