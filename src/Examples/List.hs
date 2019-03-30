@@ -33,8 +33,7 @@ module Examples.List
 
 import qualified Data.ByteString.Base16 as B16
 import qualified Data.ByteString.Char8  as B8
-import           Data.ByteString.Lazy   (ByteString, empty, fromStrict,
-                                         toStrict)
+import           Data.ByteString.Lazy   (ByteString, fromStrict, toStrict)
 import           Network
 import           System.IO              (BufferMode (..), Handle, hGetLine,
                                          hPrint, hPutStrLn, hSetBuffering)
@@ -45,19 +44,19 @@ import           Data.Auth
 infixr 5 :>
 
 -- | An authenticated list.
-data List i a = Nil | a :> Auth i (List i a)
+data List a i = Nil | a :> Auth (List a i) i
     deriving (Show, Generic)
 
-deriving instance Serializable a => Serializable (List 'P a)
-deriving instance Serializable a => Serializable (List 'V a)
-deriving instance Deserializable a => Deserializable (List 'P a)
-deriving instance Deserializable a => Deserializable (List 'V a)
+deriving instance Serializable a => Serializable (List a 'P)
+deriving instance Serializable a => Serializable (List a 'V)
+deriving instance Deserializable a => Deserializable (List a 'P)
+deriving instance Deserializable a => Deserializable (List a 'V)
 
 -- | Converts a standard list into an authenticated list.
 --
 -- >>> fst $ runProver $ fromList "Haskell"
 -- 'H' :> AuthP ('a' :> AuthP ('s' :> AuthP ('k' :> AuthP ('e' :> AuthP ('l' :> AuthP ('l' :> AuthP Nil))))))
-fromList :: (MonadAuth i m, Serializable (List i a)) => [a] -> m (List i a)
+fromList :: (MonadAuth i m, Serializable (List a i)) => [a] -> m (List a i)
 fromList = foldr f $ return Nil
   where
     f x m = (x :>) <$> (m >>= auth)
@@ -69,12 +68,12 @@ data Result = RPush | RPop (Maybe Int)
     deriving (Show, Read, Eq, Ord)
 
 executeCommand :: ( MonadAuth i m
-                  , Serializable (List i Int)
-                  , Deserializable (List i Int)
+                  , Serializable (List Int i)
+                  , Deserializable (List Int i)
                   )
                => Command
-               -> Auth i (List i Int)
-               -> m (Result, Auth i (List i Int))
+               -> Auth (List Int i) i
+               -> m (Result, Auth (List Int i) i)
 executeCommand (Push n) a = (RPush,) <$> auth (n :> a)
 executeCommand Pop      a = do
     l <- unauth a
@@ -84,8 +83,8 @@ executeCommand Pop      a = do
 
 executeCommandLying :: MonadAuth 'P m
                     => Command
-                    -> Auth 'P (List 'P Int)
-                    -> m (Result, Auth 'P (List 'P Int))
+                    -> Auth (List Int 'P) 'P
+                    -> m (Result, Auth (List Int 'P) 'P)
 executeCommandLying (Push 42) a = executeCommand (Push 43) a
 executeCommandLying c         a = executeCommand c a
 
@@ -100,13 +99,9 @@ proverIO lie port = do
     (h, _, _) <- accept s
     hSetBuffering h LineBuffering
     putStrLn "accepted verifier connection"
-    go h nilP
+    go h $ toProver nil
   where
-
-    nilP :: Auth 'P (List 'P Int)
-    nilP = fst $ runProver $ auth Nil
-
-    go :: Handle -> Auth 'P (List 'P Int) -> IO ()
+    go :: Handle -> Auth (List Int 'P) 'P -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s
         c <- read <$> hGetLine h
@@ -127,13 +122,9 @@ verifierIO port = do
     h <- connectTo "127.0.0.1" $ PortNumber port
     hSetBuffering h LineBuffering
     putStrLn $ "connected to prover on port " ++ show port
-    go h nilV
+    go h $ toVerifier' nil
   where
-
-    nilV :: Auth 'V (List 'V Int)
-    nilV = let Right x = runVerifier (auth Nil) empty in x
-
-    go :: Handle -> Auth 'V (List 'V Int) -> IO ()
+    go :: Handle -> Auth (List Int 'V) 'V -> IO ()
     go h s = do
         putStrLn $ "STATE: " ++ show s
         putStrLn "enter command!"
@@ -149,6 +140,9 @@ verifierIO port = do
                 case e of
                     Left err       -> putStrLn $ "ERROR: " ++ show err
                     Right (res, t) -> putStrLn ("RESULT: " ++ show res) >> go h t
+
+nil :: AuthM 'P (Auth (List Int 'P) 'P)
+nil = auth Nil
 
 toHex :: ByteString -> String
 toHex = B8.unpack . B16.encode . toStrict

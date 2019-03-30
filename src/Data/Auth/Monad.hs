@@ -71,13 +71,12 @@ import           Data.Monoid                    (mempty, (<>))
 import           Pipes                          (ListT)
 
 import           Data.Auth.Core
-import           Data.Auth.Hash
 import           Data.Auth.Serialize
 
 -- | Functor describing the special operations.
 data AuthF :: Mode -> Type -> Type where
-    A :: Serializable a => a -> (Auth i a -> b) -> AuthF i b
-    U :: (Serializable a, Deserializable a) => Auth i a -> (a -> b) -> AuthF i b
+    A :: Serializable a => a -> (Auth a i -> b) -> AuthF i b
+    U :: (Serializable a, Deserializable a) => Auth a i -> (a -> b) -> AuthF i b
 
 deriving instance Functor (AuthF m)
 
@@ -98,7 +97,7 @@ type AuthM i = AuthT i Identity
 -- authenticated data structures.
 class Monad m => MonadAuth i m | m -> i where
 
-    auth :: Serializable a => a -> m (Auth i a)
+    auth :: Serializable a => a -> m (Auth a i)
 
     default auth :: ( MonadTrans t
                     , MonadAuth i n
@@ -106,10 +105,10 @@ class Monad m => MonadAuth i m | m -> i where
                     , Serializable a
                     )
                  => a
-                 -> m (Auth i a)
+                 -> m (Auth a i)
     auth = lift . auth
 
-    unauth :: (Serializable a, Deserializable a) => Auth i a -> m a
+    unauth :: (Serializable a, Deserializable a) => Auth a i -> m a
 
     default unauth :: ( MonadTrans t
                       , MonadAuth i n
@@ -117,7 +116,7 @@ class Monad m => MonadAuth i m | m -> i where
                       , Serializable a
                       , Deserializable a
                       )
-                   => Auth i a
+                   => Auth a i
                    -> m a
     unauth = lift . unauth
 
@@ -240,12 +239,3 @@ runVerifierT m bs =
 -- Left AuthenticationError
 runVerifier :: AuthM 'V b -> ByteString -> Either AuthError b
 runVerifier m = runIdentity . runVerifierT m
-
--- | Interprets a function @'Auth' a -> 'AuthM' b@ in verifier-mode
--- by simply taking the proof-string as an additional argument,
--- given the hash corresponding to an @'Auth' a@ argument.
-runVerifier' :: (Auth 'V a -> AuthM 'V b)
-             -> Hash
-             -> ByteString
-             -> Either AuthError b
-runVerifier' f h = runVerifier (f $ AuthV h)

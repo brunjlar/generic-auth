@@ -34,15 +34,15 @@ import Control.Monad.State
 import Data.Auth
 
 -- | A simple authenticated binary tree type.
-data Tree i a =
+data Tree a i =
       Tip a
-    | Node (Auth i (Tree i a)) (Auth i (Tree i a))
+    | Node (Auth (Tree a i) i) (Auth (Tree a i) i)
     deriving (Show, Generic)
 
-deriving instance Serializable a => Serializable (Tree 'P a)
-deriving instance Serializable a => Serializable (Tree 'V a)
-deriving instance Deserializable a => Deserializable (Tree 'P a)
-deriving instance Deserializable a => Deserializable (Tree 'V a)
+deriving instance Serializable a => Serializable (Tree a 'P)
+deriving instance Serializable a => Serializable (Tree a 'V)
+deriving instance Deserializable a => Deserializable (Tree a 'P)
+deriving instance Deserializable a => Deserializable (Tree a 'V)
 
 -- | Describes a direction (@'L'@eft or @'R'@ight), so that
 -- a list of directions gives a path from the root of a @'Tree'@
@@ -51,13 +51,13 @@ data Direction = L | R deriving (Show, Read, Eq, Ord)
 
 -- | Builds a full @'Tree'@ with specified depth and specified tips.
 -- Using a negative depth or providing too few tips causes an error.
-buildTree :: forall i a. Serializable (Tree i a)
+buildTree :: forall i a. Serializable (Tree a i)
           => Int
           -> [a]
-          -> AuthM i (Auth i (Tree i a))
+          -> AuthM i (Auth (Tree a i) i)
 buildTree = evalStateT . go
   where
-    go :: Int -> StateT [a] (AuthM i) (Auth i (Tree i a))
+    go :: Int -> StateT [a] (AuthM i) (Auth (Tree a i) i)
     go 0 = do
         xs <- get
         case xs of
@@ -75,9 +75,9 @@ buildTree = evalStateT . go
 --
 -- >>> fst $ runProver $ buildTree 1 ["Alice", "Bob"] >>= lookupTree [L]
 -- Just "Alice"
-lookupTree :: (Serializable (Tree i a), Deserializable (Tree i a))
+lookupTree :: (Serializable (Tree a i), Deserializable (Tree a i))
            => [Direction]
-           -> Auth i (Tree i a)
+           -> Auth (Tree a i) i
            -> AuthM i (Maybe a)
 lookupTree xs at = do
     t <- unauth at
@@ -97,7 +97,7 @@ lookupTree xs at = do
 -- >>> runVerifier (lookupTree [L, L, R] exampleTreeV) bs
 -- Right (Just "Bob")
 --
-exampleTree :: Serializable (Tree i String) => AuthM i (Auth i (Tree i String))
+exampleTree :: Serializable (Tree String i) => AuthM i (Auth (Tree String i) i)
 exampleTree = buildTree 3 [ "Alice"
                           , "Bob"
                           , "Charlie"
@@ -109,12 +109,9 @@ exampleTree = buildTree 3 [ "Alice"
                           ]
 
 -- | Authenticated example tree (prover version).
-exampleTreeP :: Auth 'P (Tree 'P String)
-exampleTreeP = fst $ runProver exampleTree
+exampleTreeP :: Auth (Tree String 'P) 'P
+exampleTreeP = toProver exampleTree
 
 -- | Authenticated example tree (verifier version)
-exampleTreeV :: Auth 'V (Tree 'V String)
-exampleTreeV =
-    let bs      = snd $ runProver exampleTree
-        Right a = runVerifier exampleTree bs
-    in  a
+exampleTreeV :: Auth (Tree String 'V) 'V
+exampleTreeV = toVerifier' exampleTree

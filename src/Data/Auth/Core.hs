@@ -41,37 +41,37 @@ data Mode = P | V deriving (Show, Eq, Ord)
 -- | Authenticated version of type @a@.
 -- For the /prover/, this is just an @a@,
 -- but for the /verifier/, it is the `Hash` of that @a@.
-data Auth :: Mode -> Type -> Type where
-    AuthP :: a -> Auth 'P a
-    AuthV :: Hash -> Auth 'V a
+data Auth :: Type -> Mode -> Type where
+    AuthP :: a -> Auth a 'P
+    AuthV :: Hash -> Auth a 'V
 
-deriving instance Show a => Show (Auth m a)
-deriving instance Eq a => Eq (Auth m a)
-deriving instance Ord a => Ord (Auth m a)
+deriving instance Show a => Show (Auth a m)
+deriving instance Eq a => Eq (Auth a i)
+deriving instance Ord a => Ord (Auth a i)
 
-instance Serializable a => Serializable (Auth 'P a) where
+instance Serializable a => Serializable (Auth a 'P) where
     put (AuthP a) = put $ hash a
 
-instance Serializable (Auth 'V a) where
+instance Serializable (Auth a 'V) where
     put (AuthV h) = put h
 
-instance Deserializable a => Deserializable (Auth 'P a) where
+instance Deserializable a => Deserializable (Auth a 'P) where
     get = AuthP <$> get
 
-instance Deserializable (Auth 'V a) where
+instance Deserializable (Auth a 'V) where
     get = AuthV <$> get
 
 -- | Used by the /prover/ to construct an @`Auth` a@.
-authP :: a -> Auth 'P a
+authP :: a -> Auth a 'P
 authP = AuthP
 
 -- | Used by the /verifier/ to construct an @`Auth` a@.
-authV :: Serializable a => a -> Auth 'V a
+authV :: Serializable a => a -> Auth a 'V
 authV = AuthV . hash
 
 -- | Used by the /prover/ to deconstruct an @`Auth` a@ and a
 -- /certificate stream/ for consumption by the 7verifier/.
-unauthP :: Serializable a => Auth 'P a -> (a, ByteString)
+unauthP :: Serializable a => Auth a 'P -> (a, ByteString)
 unauthP (AuthP a) = (a, serialize a)
 
 -- | Enumerates potential authentication errors.
@@ -87,7 +87,7 @@ instance Exception AuthError
 -- provided by the /prover/. This either succeeds with an @a@ and the rest of
 -- the stream or fails with an @`AuthError`@.
 unauthV :: (Serializable a, Deserializable a)
-        => Auth 'V a  -- ^ the value to deconstruct
+        => Auth a 'V  -- ^ the value to deconstruct
         -> ByteString -- ^ certificate stream provided by the prover
         -> Either AuthError (a, ByteString)
 unauthV (AuthV h) bs = case deserialize bs of

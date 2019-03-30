@@ -26,6 +26,7 @@ module Data.Auth.Serialize
     , GDeserializable (..)
     , serialize
     , deserialize
+    , unsafeDeserialize
     ) where
 
 import qualified Data.Binary          as B
@@ -150,3 +151,18 @@ instance Deserializable Word8 where
 deriving instance Deserializable Bool
 deriving instance Deserializable a => Deserializable [a]
 deriving instance (Deserializable a, Deserializable b) => Deserializable (a, b)
+
+-- | Unsafe version of 'deserialize' which can fail and ignores unconsumed
+-- input.
+--
+-- >>> unsafeDeserialize (serialize False) :: Bool
+-- False
+--
+-- >>> unsafeDeserialize (serialize False) :: Int
+-- *** Exception: not enough bytes
+-- ...
+--
+unsafeDeserialize :: Deserializable a => ByteString -> a
+unsafeDeserialize bs = case deserialize bs of
+    Left e       -> error e
+    Right (_, x) -> x
