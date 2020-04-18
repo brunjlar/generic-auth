@@ -1,5 +1,7 @@
+{-# LANGUAGE DefaultSignatures          #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeOperators              #-}
@@ -20,50 +22,44 @@ This module defines functors that can be lifted into Kleisli categories.
 
 module Data.AuthFix.Kleisli
     ( FunctorKleisli (..)
-    , I (..)
-    , K (..)
-    , (:*:) (..)
-    , (:+:) (..)
-    , C (..)
     ) where
 
-import Data.Binary  (Binary)
-import GHC.Generics (Generic)
+import Data.Functor.Compose  (Compose)
+import Data.Functor.Const    (Const)
+import Data.Functor.Identity (Identity)
+import Data.Functor.Product  (Product)
+import Data.Functor.Sum      (Sum)
+import GHC.Generics
 
 class Functor f => FunctorKleisli f where
     lambda :: Monad m => f (m a) -> m (f a)
+    default lambda :: (Monad m, Generic1 f, FunctorKleisli (Rep1 f)) => f (m a) -> m (f a)
+    lambda = fmap to1 . lambda . from1
 
-newtype I a = I a
-    deriving (Show, Read, Eq, Ord, Binary, Generic, Functor)
+instance FunctorKleisli f => FunctorKleisli (M1 i c f) where
+    lambda = fmap M1 . lambda . unM1
 
-instance FunctorKleisli I where
-    lambda (I ma) = fmap I ma
-
-newtype K a b = K a
-    deriving (Show, Read, Eq, Ord, Binary, Generic, Functor)
-
-instance FunctorKleisli (K a) where
-    lambda (K a) = return $ K a
-
-data (f :*: g) a = f a :*: g a
-    deriving (Show, Read, Eq, Ord, Generic, Functor)
-
-instance (Binary (f a), Binary (g a)) => Binary ((f :*: g) a)
+instance FunctorKleisli (K1 i c) where
+    lambda = return . K1 . unK1
 
 instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (f :*: g) where
     lambda (fma :*: gma) = (:*:) <$> lambda fma <*> lambda gma
 
-data (f :+: g) a = Inl (f a) | Inr (g a)
-    deriving (Show, Read, Eq, Ord, Generic, Functor)
-
-instance (Binary (f a), Binary (g a)) => Binary ((f :+: g) a)
-
 instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (f :+: g) where
-    lambda (Inl fma) = Inl <$> lambda fma
-    lambda (Inr gma) = Inr <$> lambda gma
+    lambda (L1 fma) = L1 <$> lambda fma
+    lambda (R1 gma) = R1 <$> lambda gma
 
-newtype C f g a = C (f (g a))
-    deriving (Show, Read, Eq, Ord, Generic, Binary, Functor)
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (f :.: g) where
+    lambda = fmap Comp1 . lambda . fmap lambda . unComp1
 
-instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (C f g) where
-    lambda (C fgma) = C <$> lambda (lambda <$> fgma)
+instance FunctorKleisli Par1 where
+    lambda = fmap Par1 . unPar1
+
+instance FunctorKleisli f => FunctorKleisli (Rec1 f) where
+    lambda = fmap Rec1 . lambda . unRec1
+
+instance FunctorKleisli Identity
+instance FunctorKleisli (Const a)
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (Product f g)
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (Sum f g)
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (Compose f g)

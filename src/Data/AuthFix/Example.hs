@@ -4,7 +4,10 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_HADDOCK show-extensions     #-}
+
+{-# OPTIONS_GHC -Wno-orphans #-}
+
+{-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
 Module      : Data.AuthFix.Example
@@ -19,10 +22,13 @@ This module contains some examples.
 -}
 
 module Data.AuthFix.Example
-    (
+    ( leaf
+    , node
+    , leftmost
+    , sampleTree
+    , test
     ) where
 
-import Control.Monad.Except
 import Data.AuthFix.Monad
 import Data.AuthFix.Prover
 import Data.AuthFix.Verifier

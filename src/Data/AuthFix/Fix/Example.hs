@@ -1,5 +1,9 @@
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators         #-}
+
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {-# OPTIONS_HADDOCK show-extensions #-}
 
@@ -16,20 +20,27 @@ This module contains some examples.
 -}
 
 module Data.AuthFix.Fix.Example
-    (
+    ( fromNonEmpty
+    , rightmost
+    , sampleTree
+    , test
     ) where
 
-import Data.Binary                  (Binary)
-import Data.List.NonEmpty           (NonEmpty (..))
-import qualified Data.List.NonEmpty as NE
+import Data.Binary           (Binary)
+import Data.List.NonEmpty    (NonEmpty (..))
+import GHC.Generics          (Generic, Generic1)
 
 import Data.AuthFix.Fix
 import Data.AuthFix.Kleisli
 import Data.AuthFix.Monad
-import Data.AuthFix.Prover          hiding (P)
+import Data.AuthFix.Prover   hiding (P)
 import Data.AuthFix.Verifier
 
-type TreeF a = K a :+: (I :*: I)
+data TreeF a b = Leaf a | Node b b
+    deriving (Show, Read, Eq, Ord, Generic, Generic1, Functor)
+
+instance FunctorKleisli (TreeF a)
+instance (Binary a, Binary b) => Binary (TreeF a b)
 
 type Tree f a = FixA f (TreeF a)
 
@@ -41,9 +52,9 @@ fromNonEmpty :: ( Binary a
              -> AuthT f m (Tree f a)
 fromNonEmpty = anaA g
   where
-    g (a :| [])       = Inl (K a)
+    g (a :| [])       = Leaf a
     g (a :| (b : cs)) = let (ds, es) = split cs
-                        in  Inr $ I (a :| ds) :*: I (b :| es)
+                        in  Node (a :| ds) (b :| es)
 
 split :: [a] -> ([a], [a])
 split []           = ([], [])
@@ -58,8 +69,8 @@ rightmost :: ( Binary a
           -> AuthT f m a
 rightmost = cataA g
   where
-    g (Inl (K a))       = a
-    g (Inr (_ :*: I a)) = a
+    g (Leaf a)   = a
+    g (Node _ a) = a
 
 sampleTree :: (forall b. Binary b => Binary (f b)) => Auth f (Tree f Char)
 sampleTree = fromNonEmpty $ 'a' :| "bcdefghij"
