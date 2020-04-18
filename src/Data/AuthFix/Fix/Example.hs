@@ -1,4 +1,6 @@
 {-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeOperators         #-}
+
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
@@ -27,7 +29,7 @@ import Data.AuthFix.Monad
 import Data.AuthFix.Prover          hiding (P)
 import Data.AuthFix.Verifier
 
-type TreeF a = S (K a) (P I I)
+type TreeF a = K a :+: (I :*: I)
 
 type Tree f a = FixA f (TreeF a)
 

@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving         #-}
+{-# LANGUAGE TypeOperators              #-}
+
 {-# OPTIONS_HADDOCK show-extensions #-}
 
 {-|
@@ -20,8 +22,8 @@ module Data.AuthFix.Kleisli
     ( FunctorKleisli (..)
     , I (..)
     , K (..)
-    , P (..)
-    , S (..)
+    , (:*:) (..)
+    , (:+:) (..)
     , C (..)
     ) where
 
@@ -43,20 +45,20 @@ newtype K a b = K a
 instance FunctorKleisli (K a) where
     lambda (K a) = return $ K a
 
-data P f g a = f a :*: g a
+data (f :*: g) a = f a :*: g a
     deriving (Show, Read, Eq, Ord, Generic, Functor)
 
-instance (Binary (f a), Binary (g a)) => Binary (P f g a)
+instance (Binary (f a), Binary (g a)) => Binary ((f :*: g) a)
 
-instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (P f g) where
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (f :*: g) where
     lambda (fma :*: gma) = (:*:) <$> lambda fma <*> lambda gma
 
-data S f g a = Inl (f a) | Inr (g a)
+data (f :+: g) a = Inl (f a) | Inr (g a)
     deriving (Show, Read, Eq, Ord, Generic, Functor)
 
-instance (Binary (f a), Binary (g a)) => Binary (S f g a)
+instance (Binary (f a), Binary (g a)) => Binary ((f :+: g) a)
 
-instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (S f g) where
+instance (FunctorKleisli f, FunctorKleisli g) => FunctorKleisli (f :+: g) where
     lambda (Inl fma) = Inl <$> lambda fma
     lambda (Inr gma) = Inr <$> lambda gma
 
