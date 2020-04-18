@@ -41,7 +41,7 @@ library
                      , free
                      , memory
                      , mtl
-                     , network
+                     , network >= 2.6.3 && < 2.7
                      , pipes
                      , QuickCheck
                      , transformers

@@ -64,7 +64,6 @@ import           Data.Auth.Hash
 import           Data.ByteString.Builder        (Builder, lazyByteString,
                                                  toLazyByteString)
 import           Data.ByteString.Lazy           (ByteString)
-import           Data.Monoid                    (mempty, (<>))
 import           Pipes                          (ListT)
 
 data AuthF :: * -> * where
