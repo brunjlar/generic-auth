@@ -24,7 +24,6 @@ module Data.AuthFix.Fix
     , anaA
     ) where
 
-import Data.AuthFix.Kleisli (FunctorKleisli (..))
 import Data.AuthFix.Monad
 import Data.Binary (Binary)
 import GHC.Generics (Generic)
@@ -48,7 +47,7 @@ unwrapA (FixA x) = x
 
 cataA :: ( forall b. Binary b => Binary (g b)
          , forall b. Binary b => Binary (f b)
-         , FunctorKleisli g
+         , Traversable g
          , Monad m
          )
       => (g a -> a)
@@ -56,12 +55,12 @@ cataA :: ( forall b. Binary b => Binary (g b)
       -> AuthT f m a
 cataA h x = do
     gy <- unauth $ unwrapA x
-    ga <- lambda $ fmap (cataA h) gy
+    ga <- sequence $ fmap (cataA h) gy
     return $ h ga
 
 anaA :: ( forall b. Binary b => Binary (g b)
         , forall b. Binary b => Binary (f b)
-        , FunctorKleisli g
+        , Traversable g
         , Monad m
         )
      => (a -> g a)
@@ -69,6 +68,6 @@ anaA :: ( forall b. Binary b => Binary (g b)
      -> AuthT f m (FixA f g)
 anaA h a = do
     let ga = h a
-    gx  <- lambda $ fmap (anaA h) ga
+    gx  <- sequence $ fmap (anaA h) ga
     fgx <- auth gx
     return $ wrapA fgx

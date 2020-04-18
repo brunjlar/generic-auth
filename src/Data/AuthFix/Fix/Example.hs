@@ -1,5 +1,7 @@
+{-# LANGUAGE DeriveFoldable        #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveTraversable     #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeOperators         #-}
 
@@ -28,18 +30,16 @@ module Data.AuthFix.Fix.Example
 
 import Data.Binary           (Binary)
 import Data.List.NonEmpty    (NonEmpty (..))
-import GHC.Generics          (Generic, Generic1)
+import GHC.Generics          (Generic)
 
 import Data.AuthFix.Fix
-import Data.AuthFix.Kleisli
 import Data.AuthFix.Monad
 import Data.AuthFix.Prover   hiding (P)
 import Data.AuthFix.Verifier
 
 data TreeF a b = Leaf a | Node b b
-    deriving (Show, Read, Eq, Ord, Generic, Generic1, Functor)
+    deriving (Show, Read, Eq, Ord, Generic, Functor, Foldable, Traversable)
 
-instance FunctorKleisli (TreeF a)
 instance (Binary a, Binary b) => Binary (TreeF a b)
 
 type Tree f a = FixA f (TreeF a)
