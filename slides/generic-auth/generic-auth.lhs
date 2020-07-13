@@ -323,12 +323,12 @@ the verifier only knows the tree's
     \pause
     \begin{itemize}
         \item
-            Extend the type system by adding a new type $\lambda a$ for each OCaml
+            Extend the type system by adding a new type $\bullet a$ for each OCaml
             type $a$.\\
             \pause
         \item
-            Formally add functions $\id{auth}:a\rightarrow\lambda a$ and
-            $\id{unauth}:\lambda a\rightarrow a$ which are \emph{inverse}
+            Formally add functions $\id{auth}:a\rightarrow\bullet a$ and
+            $\id{unauth}:\bullet a\rightarrow a$ which are \emph{inverse}
             to each other.
             \pause
         \item
@@ -348,7 +348,7 @@ the verifier only knows the tree's
                 \alert{Prover}
                 \begin{itemize}
                     \item<2->
-                        $\lambda a\sim a$.
+                        $\bullet a\sim a$.
                     \item<3->
                         $\id{auth}\ a$ does nothing.
                     \item<4->
@@ -362,7 +362,7 @@ the verifier only knows the tree's
                     \begin{tikzcd}[row sep=5cm,column sep=tiny]%
                         a
                         \ar[d, bend right=30, "\id{auth}"'] \\
-                        {\lambda a}
+                        {\bullet a}
                         \ar[u, bend right=30, "\id{unauth}"'] \\
                     \end{tikzcd}
                 \]
@@ -372,7 +372,7 @@ the verifier only knows the tree's
                 \alert{Verifier}
                 \begin{itemize}
                     \item<2->
-                        $\lambda a\sim\ty{Hash}$.
+                        $\bullet a\sim\ty{Hash}$.
                     \item<3->
                         $\id{auth}\ a$ hashes $a$.
                     \item<4->
